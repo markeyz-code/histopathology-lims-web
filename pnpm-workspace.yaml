@@ -1,0 +1,16 @@
+packages:
+  - apps/*
+  - packages/*
+
+minimumReleaseAgeExclude:
+  - '@types/pdfkit@0.17.7'
+
+overrides:
+  sharp: 0.35.5
+
+allowBuilds:
+  '@scarf/scarf': true
+  esbuild: true
+  mongodb-memory-server: true
+  msgpackr-extract: true
+  sharp: true

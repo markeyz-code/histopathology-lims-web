@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+.output/
+.nuxt/
+.nitro/
+.cache/
+*.tsbuildinfo
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# storage (generated PDFs)
+storage/
+
+# test artifacts
+coverage/
+test-results/
+playwright-report/
+.mongo-memory-server/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
+logs/
+.tmp/
+.mongo-data/
+.mongo-uri
+
+.e2e-tmp/

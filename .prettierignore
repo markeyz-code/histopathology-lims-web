@@ -1,0 +1,9 @@
+node_modules
+dist
+.output
+.nuxt
+coverage
+pnpm-lock.yaml
+storage
+apps/web/public/sw.js
+apps/web/public/workbox-*.js

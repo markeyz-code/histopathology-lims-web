@@ -1,0 +1,49 @@
+{
+  "name": "histopathology-lims",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A block-and-slide level Laboratory Information Management System for hospital histopathology departments.",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@12.11.2",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "pnpm --filter @lims/shared build && pnpm --filter @lims/api build && pnpm --filter @lims/web build",
+    "build:shared": "pnpm --filter @lims/shared build",
+    "build:api": "pnpm --filter @lims/shared build && pnpm --filter @lims/api build",
+    "build:web": "pnpm --filter @lims/shared build && pnpm --filter @lims/web build",
+    "dev": "pnpm --filter @lims/shared build && concurrently -k -n shared,api,web -c gray,cyan,magenta \"pnpm --filter @lims/shared dev\" \"pnpm --filter @lims/api dev\" \"pnpm --filter @lims/web dev\"",
+    "dev:api": "pnpm --filter @lims/shared build && pnpm --filter @lims/api dev",
+    "dev:web": "pnpm --filter @lims/shared build && pnpm --filter @lims/web dev",
+    "typecheck": "pnpm -r --no-bail typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm --filter @lims/api test",
+    "test:e2e": "pnpm --filter @lims/api test:e2e",
+    "seed": "pnpm --filter @lims/api seed",
+    "seed:reset": "pnpm --filter @lims/api seed:reset",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f api web",
+    "test:unit": "pnpm --filter @lims/api test",
+    "test:all": "pnpm test:unit && pnpm test:e2e",
+    "db:up": "docker compose up -d mongo mongo-init redis",
+    "db:down": "docker compose stop mongo redis",
+    "docker:seed": "docker compose --profile tools run --rm seed",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:e2e && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "concurrently": "10.0.6",
+    "eslint": "9.39.5",
+    "eslint-plugin-vue": "10.11.1",
+    "globals": "16.5.0",
+    "prettier": "3.9.10",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.0",
+    "vue-eslint-parser": "10.4.1"
+  }
+}
