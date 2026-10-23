@@ -1,5 +1,7 @@
 # Architecture notes
 
+> This document covers the Phase 1 core. Phase 2/3 modules — referral portal, notifications, inventory, QA, offline sync, FHIR/HL7, WSI, terminology and billing — are documented in [phase-2-3.md](phase-2-3.md).
+
 This document records the structural decisions behind Phase 1. It is intentionally narrower than the product README: the focus is how the software keeps a physical specimen's history correct.
 
 ## 1. Runtime topology
@@ -205,7 +207,9 @@ Validation errors may return `message` as an array. MongoDB duplicate keys, cast
 - E2E starts an ephemeral Mongo replica set and exercises the actual Nest app through HTTP: login, accession, grossing, scans, cutting, staining, report creation, sign-out, PDF, verification, amendment, tenancy isolation, audit, worklist and dashboard.
 - Playwright/puppeteer was used during development for visual verification of desktop, tablet and mobile states; screenshots in `docs/screens` are from the seeded demo.
 
-## 11. Deliberate Phase 1 trade-offs
+## 11. Deliberate core trade-offs
+
+Phase 2/3 extends this core without changing the append-only custody ledger; see the companion document.
 
 - Access/refresh tokens are stored in first-party cookies for the SPA. An `HttpOnly` refresh cookie requires a same-site proxy and is a production hardening step.
 - PDFs live on local disk. A shared object store can replace `STORAGE_DIR` without changing the report model.

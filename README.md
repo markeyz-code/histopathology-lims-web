@@ -1,6 +1,8 @@
 # Histopathology LIMS
 
-**Phase 1 — core tracking and reporting.** A block-and-slide level laboratory information management system for hospital histopathology departments, designed Nigeria-first for low-resource, low-bandwidth laboratories.
+**Phase 2 / 3 — a connected, offline-capable histopathology LIMS.** A block-and-slide level laboratory information management system for hospital histopathology departments, designed Nigeria-first for low-resource, low-bandwidth laboratories.
+
+Phase 1 built the custody, worklist and synoptic reporting core. Phase 2 adds the referral portal, real notification delivery, reagent/antibody lot control and QA peer review. Phase 3 adds the offline-first scan queue, FHIR R4, HL7 v2, whole-slide imaging, SNOMED CT / ICD-O-3 coding, Paystack/Flutterwave payments and HMO claims export.
 
 Most LIMS stop at the specimen. This one follows the physical work: a specimen becomes cassettes, cassettes become slides, and every movement is an immutable custody event. Status is never typed in — it is derived by a state machine from the last scan. Pathologists get a prioritised worklist, structured synoptic reporting, server-rendered PDFs with verification QR codes, and reports that lock on sign-out.
 
@@ -11,6 +13,12 @@ Most LIMS stop at the specimen. This one follows the physical work: a specimen b
 | ![Pathologist worklist](docs/screens/worklist.webp)      | ![Case detail and custody timeline](docs/screens/case-detail.webp) |
 | **Scan station**                                         | **Synoptic report**                                                |
 | ![Grossing scan station](docs/screens/scan-station.webp) | ![Signed synoptic report](docs/screens/report-editor.webp)         |
+| **Referral portal**                                      | **Referral detail**                                                |
+| ![Referral portal](docs/screens/referral-portal.jpg)     | ![Referral detail](docs/screens/referral-detail.jpg)               |
+| **Reagent & antibody inventory**                         | **QA peer review**                                                 |
+| ![Inventory](docs/screens/inventory.jpg)                 | ![QA review](docs/screens/qa.jpg)                                  |
+| **Billing & HMO claims**                                 | **Clinical coding**                                                |
+| ![Billing](docs/screens/billing.jpg)                     | ![SNOMED and ICD-O-3 coding](docs/screens/report-coding.jpg)       |
 
 ---
 
@@ -29,20 +37,45 @@ Most LIMS stop at the specimen. This one follows the physical work: a specimen b
 | PDF report                                           | Lab letterhead, synoptic narrative, signature block, QR verification, Unicode fonts, page numbering, draft watermark                                                                     |
 | Dashboard                                            | Cases by status and priority, TAT by stage, overdue breach watch, pathologist workload, recent accessions                                                                                |
 | Audit                                                | Every create, update, scan, sign-out and amendment with actor, before/after values, IP/user agent and request ID                                                                         |
-| Offline resilience                                   | Installable PWA, cached app shell and offline screen, compressed assets, no heavy UI library. Offline clinical writes arrive in Phase 3 by design                                        |
+| Offline resilience                                   | Installable PWA, cached app shell, offline screen, IndexedDB scan queue, idempotent batch replay and on-device queue badge                                                               |
 | Quality                                              | Strict TypeScript, Zod contracts shared by both apps, class-validator DTOs, Swagger, unit + E2E tests, ESLint and Prettier                                                               |
+
+## What Phase 2 and Phase 3 add
+
+| Requirement                  | Implementation                                                                                                                                                                      |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Referrer portal              | Magic-link + six-digit OTP sign-in, one-time hashed tokens, rate-limited requests, case status, released-report view and PDF download                                               |
+| SMS / WhatsApp / email       | Notification outbox with delivery state and retries; SMTP, Termii, Twilio SMS and Twilio WhatsApp adapters; safe log/outbox mode for local development                              |
+| Report release               | Explicit pathologist/admin release after sign-out, referrer notification, release audit; amendment resets release until re-released                                                 |
+| Reagent & antibody inventory | Lot-level quarantine/validation, expiry alerts, stock adjustment, usage tracking and a usable-lot check before any stain run                                                        |
+| Stain runs                   | Link slide/block to multiple lots, consume stock atomically, QC pass advances the slide to `STAINED`; expired or unvalidated lots are blocked with a clear reason                   |
+| QA peer review               | Sampled peer review at sign-out, requested second opinions, coded discrepancies, severity, action plans, reviewer queue and QA statistics                                           |
+| Rejection codes              | Coded specimen rejection (mislabelled, fixation delay, insufficient tissue, contamination, broken slide, lost in processing, unrepresentative, other) retained in the custody event |
+| Offline sync                 | IndexedDB mutation queue for scan stations, automatic replay on reconnect, idempotency keys and a batch `/sync` API that returns per-mutation results                               |
+| FHIR R4                      | `Patient`, `ServiceRequest`, `Specimen` and `DiagnosticReport` read/search resources, CapabilityStatement, SNOMED/ICD-O-3 coding and PDF links                                      |
+| HL7 v2                       | MLLP listener for ORM^O01 / OML^O21 order intake, ACK AA/AE, and ORU^R01 result rendering from signed reports                                                                       |
+| Whole-slide imaging          | Link image/viewer URLs to a slide, scanner webhook signed with HMAC-SHA256, barcode lookup, and WSI actions in the case file                                                        |
+| SNOMED CT / ICD-O-3          | Laboratory-licensed code subset import, terminology search, report coding validation, PDF coding block and FHIR coding output                                                       |
+| Payments                     | Invoices for self-pay, HMO and corporate payers; Paystack/Flutterwave checkout; webhook verification; cash/transfer receipts; local mock checkout                                   |
+| HMO claims                   | Claim-ready invoice fields, authorization numbers and CSV export                                                                                                                    |
+| Notifications visibility     | Admin outbox with channel, provider, recipient, status, errors and retry                                                                                                            |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
   Browser["Nuxt 3 SPA / PWA<br/>tablet + desktop + scan stations"] -->|"REST /api · JWT"| API["NestJS API<br/>role + tenant context"]
+  Portal["Referrer portal<br/>magic link / OTP"] --> API
+  EMR["Hospital EMR"] -->|"FHIR R4 · HL7 v2 MLLP"| API
+  Payer["Paystack / Flutterwave"] -->|"signed webhooks"| API
   API --> Mongo[("MongoDB replica set<br/>transactions")]
   API --> Redis[("Redis")]
-  Redis --> Workers["BullMQ workers<br/>PDF · TAT checks · notification stubs"]
+  Redis --> Workers["BullMQ workers<br/>PDF · TAT · lot expiry"]
   API --> Disk[("PDF / label storage")]
+  API --> Outbox["Notification adapters<br/>SMTP · Termii · Twilio"]
+  API --> WSI["WSI scanner webhook"]
   Workers --> Mongo
-  Browser -. "cached shell only" .-> SW["Service worker"]
+  Browser -. "IndexedDB scan queue" .-> SW["Service worker"]
 ```
 
 **Monorepo**
@@ -53,15 +86,17 @@ apps/
               blocks, slides, custody, worklist, reports, protocols,
               labels, dashboard, audit, pdf, jobs
   web/        Nuxt 3: app shell, accessioning, scan station, worklist,
-              locator, synoptic editor, admin, verification
+              locator, synoptic editor, referral portal, QA, inventory,
+              billing, integrations, verification, offline queue
 packages/
   shared/     Domain vocabulary, state machines, Zod schemas, API types,
-              TAT + accession formatting, protocol validation/narrative
+              TAT + accession formatting, protocol validation/narrative,
+              Phase 2/3 contracts
 docker/       Mongo replica-set initialiser
 docs/         Architecture notes and screenshots
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the request lifecycle, tenancy enforcement, transaction boundaries, indexes and design trade-offs.
+See [docs/architecture.md](docs/architecture.md) for the Phase 1 core and [docs/phase-2-3.md](docs/phase-2-3.md) for referral, inventory, QA, offline sync, interoperability and billing design.
 
 ### Domain hierarchy
 
@@ -123,6 +158,10 @@ docker compose --profile tools run --rm seed
 
 The `seed` profile is a one-shot container. It drops and rebuilds the sample dataset when `SEED_RESET=true`, which is the default for that command. Use `docker compose down -v` to remove Mongo/Redis/PDF volumes entirely.
 
+**Referral portal demo:** open `/portal/login`, use lab code `HISTO` and `referrer@clinic.ng`. The local Compose stack sets `PORTAL_DEBUG=true`, so the one-time code is shown on screen and written to the outbox. Set it to `false` in any shared environment. `HP-2026-000025` has a released report; `HP-2026-000023` is signed but unreleased and is useful for demonstrating the release action.
+
+**Phase 2/3 demo surfaces:** `/admin/inventory` (lots and stain runs), `/qa` (peer review and discrepancy), `/admin/billing` (invoices, mock checkout, claims CSV), `/admin/notifications` (outbox), `/admin/integrations` (FHIR/HL7/WSI/terminology map), and `/payments/mock?reference=…` (local checkout).
+
 Docker services use local development defaults. Set real secrets in `.env` or your orchestrator for any shared environment, and run the API with `NODE_ENV=production` there. Environment validation rejects development secrets in production.
 
 ## Quick start — local development
@@ -157,9 +196,7 @@ All seeded users share one lab, **HISTO**. Passwords are shown for local demonst
 | Pathologist (urology/gynae) | `pathologist2@histo.ng` | `Pathologist#2026`  |
 | Referring clinician         | `referrer@clinic.ng`    | `Referrer#2026`     |
 
-The seed creates 30 realistic cases across received, grossed, processing, embedded, cut/stained, pending review, reported, amended and archived stages, with custody histories, draft reports and signed reports (two amended). Try scanning `BL-HP-2026-000004-A1` at the grossing station, or use the specimen locator with that barcode.
-
-The referring clinician account is intentionally limited to the Phase 2 notice page; the referral portal is not part of Phase 1.
+The seed creates 30 realistic cases across received, grossed, processing, embedded, cut/stained, pending review, reported, amended and archived stages, plus reagent/stain-run data, QA reviews, WSI links, terminology, invoices, payments and a released referral portal history. Try scanning `BL-HP-2026-000004-A1` at the grossing station, or use the specimen locator with that barcode. The referring clinician signs in at `/portal/login` with `referrer@clinic.ng`; the password account remains available for staff-side administration only.
 
 ## Environment variables
 
@@ -220,6 +257,25 @@ GET    /api/dashboard                              GET  /api/protocols
 GET    /api/users[/pathologists]                   GET  /api/labs/me
 GET    /api/audit                                  POST /api/maintenance/tat-check
 GET    /api/health  (public)                       Swagger at /docs
+
+Phase 2/3 additions:
+POST   /api/portal/auth/request | /verify          GET /api/portal/cases[/:id]
+GET    /api/portal/cases/:id/report.pdf            POST /api/reports/:id/release
+GET    /api/inventory/lots                         POST /api/inventory/lots
+POST   /api/inventory/lots/:id/validate|reject|adjust
+GET    /api/inventory/stain-runs                   POST /api/inventory/stain-runs
+POST   /api/inventory/stain-runs/:id/complete      POST /api/inventory/expiry-check
+GET    /api/qa/reviews | /stats                    POST /api/qa/reviews
+POST   /api/qa/reviews/:id/assign|start|complete
+POST   /api/sync/batch                             (Idempotency-Key supported on /custody/scan)
+GET    /api/fhir/r4/metadata                       GET /api/fhir/r4/Patient|ServiceRequest|Specimen|DiagnosticReport
+POST   /api/interop/hl7/messages                   GET /api/interop/hl7/oru/:caseId
+POST   /api/wsi/slides/:id/link                    GET /api/wsi/:barcode  POST /api/wsi/webhook
+GET    /api/terminology/search                     POST /api/terminology/import
+POST   /api/invoices                               GET /api/invoices
+POST   /api/invoices/:id/payments/initialize|manual
+POST   /api/payments/webhooks/paystack|flutterwave  GET /api/payments/:reference
+GET    /api/claims/export                          GET /api/notifications/outbox
 ```
 
 All endpoints are documented in Swagger with bearer auth, DTOs and error shapes.
@@ -232,7 +288,7 @@ pnpm test:e2e
 pnpm verify
 ```
 
-The E2E suite starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
+The E2E suite (16 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
 
 - accessioning generates a formatted accession number and unique specimen barcode
 - role checks and invalid scan transitions reject correctly
@@ -242,6 +298,12 @@ The E2E suite starts an ephemeral MongoDB **replica set** with `mongodb-memory-s
 - an amendment creates version 2 and moves the case to `AMENDED`
 - a user from another lab gets `404` / an empty list — tenant isolation
 - audit log contains scan, sign-out and amendment entries
+- a released report is visible in the referral portal after magic-link verification
+- expired or unvalidated reagent lots are rejected before a stain run consumes stock
+- peer review records a coded discrepancy
+- FHIR R4, WSI linking and HL7 order ingestion respond correctly
+- a mock Paystack checkout settles the invoice and appears in the HMO CSV
+- an offline scan mutation replays idempotently
 
 ## Design direction
 
@@ -258,14 +320,22 @@ Tokens live in [`apps/web/tailwind.config.ts`](apps/web/tailwind.config.ts) and 
 - MongoDB runs without auth in the supplied Compose file for local development only. Use authentication, TLS, a three-member replica set, backups and least-privilege users in production.
 - An audit entry is written for each mutation; the audit and custody collections are append-only at the data layer.
 - Patient data protection: tune log retention, access reviews and NDPR/NDPA obligations for your jurisdiction. The seed contains fictitious patients only.
+- `PORTAL_DEBUG`, `PAYMENTS_MODE=mock` and `NOTIFICATIONS_MODE=outbox` are local-development conveniences. Disable them in production.
+- MLLP is plain TCP; place it on a restricted clinical VLAN or behind a TLS/allowlist proxy.
+- Payment webhooks are signature-verified; never trust a client redirect as proof of payment.
+- Terminology content is licensed separately. The seed subset is for demonstration only.
 
-## Later phases (not built)
+## Phase 4 / hardening
 
-**Phase 2** — referrer portal with magic-link/OTP, status tracking, SMS/WhatsApp/email notifications; reagent and antibody lot inventory linked to stain runs with expiry/validation blocking; QA module with peer-review sampling, second-opinion rules, discrepancy tracking and rejection reason codes.
+The Phase 2/3 feature set is implemented. The next engineering pass is operational hardening, not a hidden backlog:
 
-**Phase 3** — offline-first IndexedDB queue with idempotent event sync and optional on-prem sync server; FHIR R4 (Patient, Specimen, ServiceRequest, DiagnosticReport); HL7 v2 adapter; whole-slide image linking by slide barcode; SNOMED CT / ICD-O-3 lookups; Paystack/Flutterwave payments and HMO claims export.
-
-The current schema already carries stable barcode identifiers, protocol snapshots, immutable report versions and lab-scoped notifications so these phases can be added without rewriting Phase 1.
+- move refresh tokens to `HttpOnly` cookies behind a same-site reverse proxy and add gateway rate limiting
+- replace local PDF storage with encrypted object storage and retention policies
+- run the HL7 MLLP listener behind a network allowlist/TLS terminator and add message replay monitoring
+- connect production SMTP/Termii/Twilio/Paystack/Flutterwave credentials and contract tests against provider sandboxes
+- load a licensed, maintained SNOMED CT / ICD-O-3 release and define a terminology update process
+- extend the offline queue beyond scans to grossing/stain-run drafts with conflict-resolution UI
+- add a full data-processing agreement, backup drills and NDPR/NDPA access reviews
 
 ## Conventional commits
 
