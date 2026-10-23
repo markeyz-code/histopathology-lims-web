@@ -26,6 +26,11 @@ const loading = ref(true);
 const error = ref<string | null>(null);
 const roleFilter = ref<Role | ''>('');
 const query = ref('');
+const roleOptions = ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role] }));
+const roleFilterOptions = [
+  { value: '', label: 'All roles' },
+  ...ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role] })),
+];
 
 const createOpen = ref(false);
 const createSaving = ref(false);
@@ -236,10 +241,14 @@ onMounted(() => load());
           aria-label="Search staff"
         />
       </div>
-      <select v-model="roleFilter" class="select w-auto" aria-label="Filter by role">
-        <option value="">All roles</option>
-        <option v-for="role in ROLES" :key="role" :value="role">{{ ROLE_LABELS[role] }}</option>
-      </select>
+      <SearchSelect
+        v-model="roleFilter"
+        :options="roleFilterOptions"
+        :full-width="false"
+        class="w-auto"
+        aria-label="Filter by role"
+        placeholder="All roles"
+      />
     </div>
 
     <ErrorState v-if="error" :message="error" @retry="load" />
@@ -406,9 +415,12 @@ onMounted(() => load());
           />
         </FormField>
         <FormField label="Role" for-id="new-role" required>
-          <select id="new-role" v-model="createForm.role" class="select">
-            <option v-for="role in ROLES" :key="role" :value="role">{{ ROLE_LABELS[role] }}</option>
-          </select>
+          <SearchSelect
+            id="new-role"
+            v-model="createForm.role"
+            :options="roleOptions"
+            placeholder="Select role"
+          />
         </FormField>
 
         <div v-if="isClinicalRole(createForm.role)" class="border border-line bg-canvas p-3">

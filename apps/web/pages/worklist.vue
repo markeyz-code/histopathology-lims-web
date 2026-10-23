@@ -9,6 +9,17 @@ const toast = useToast();
 const { name, date, relative } = useFormat();
 const worklist = useWorklist();
 
+const priorityOptions = [
+  { value: '', label: 'All priorities' },
+  { value: 'FROZEN', label: 'Frozen' },
+  { value: 'URGENT', label: 'Urgent' },
+  { value: 'ROUTINE', label: 'Routine' },
+];
+const subspecialtyOptions = [
+  { value: '', label: 'All subspecialties' },
+  ...SUBSPECIALTIES.map((value) => ({ value, label: value })),
+];
+
 const statusOptions = [
   { value: '', label: 'All active' },
   { value: 'RECEIVED', label: 'Received' },
@@ -110,35 +121,27 @@ onMounted(() => worklist.refresh());
             {{ option.label }}
           </button>
         </div>
-        <select
+        <SearchSelect
           v-model="worklist.status.value"
-          class="select input-sm w-auto min-w-[150px]"
+          :options="statusOptions"
+          :full-width="false"
+          class="input-sm w-auto min-w-[150px]"
           aria-label="Filter by status"
-        >
-          <option v-for="option in statusOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </select>
-        <select
+        />
+        <SearchSelect
           v-model="worklist.priority.value"
-          class="select input-sm w-auto"
+          :options="priorityOptions"
+          :full-width="false"
+          class="input-sm w-auto"
           aria-label="Filter by priority"
-        >
-          <option value="">All priorities</option>
-          <option value="FROZEN">Frozen</option>
-          <option value="URGENT">Urgent</option>
-          <option value="ROUTINE">Routine</option>
-        </select>
-        <select
+        />
+        <SearchSelect
           v-model="worklist.subspecialty.value"
-          class="select input-sm w-auto"
+          :options="subspecialtyOptions"
+          :full-width="false"
+          class="input-sm w-auto"
           aria-label="Filter by subspecialty"
-        >
-          <option value="">All subspecialties</option>
-          <option v-for="subspecialty in SUBSPECIALTIES" :key="subspecialty" :value="subspecialty">
-            {{ subspecialty }}
-          </option>
-        </select>
+        />
         <button
           v-if="
             worklist.status.value ||

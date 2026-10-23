@@ -50,6 +50,35 @@ const form = reactive({
   notes: '',
 });
 
+const runCaseOptions = computed(() => [
+  { value: '', label: 'Select a case' },
+  ...runCases.value.map((item) => ({
+    value: item.id,
+    label: `${item.accessionNumber} · ${item.patient.firstName} ${item.patient.lastName}`,
+  })),
+]);
+const slideOptions = computed(() => [
+  {
+    value: '',
+    label: loadingSlides.value ? 'Loading slides…' : 'Select a slide awaiting staining',
+  },
+  ...runSlides.value.map((slide) => ({
+    value: slide.id,
+    label: `${slide.label} · ${slide.stainType}`,
+  })),
+]);
+const lotOptions = computed(() =>
+  usableLots.value.map((lot) => ({
+    value: lot.id,
+    label: `${lot.name} · ${lot.lotNumber}`,
+    description: `${lot.quantity} ${lot.unit} available`,
+  })),
+);
+const categoryOptions = REAGENT_CATEGORIES.map((value) => ({
+  value,
+  label: REAGENT_CATEGORY_LABELS[value],
+}));
+
 const activeLots = computed(() => lots.value.filter((lot) => lot.status === 'ACTIVE'));
 const expiringLots = computed(() =>
   activeLots.value.filter(
@@ -468,44 +497,35 @@ onMounted(load);
     >
       <form class="space-y-3" @submit.prevent="createRun">
         <FormField label="Case" for-id="run-case" required>
-          <select
+          <SearchSelect
             id="run-case"
             v-model="runForm.caseId"
-            class="select"
+            :options="runCaseOptions"
+            placeholder="Select a case"
             @change="loadRunSlides(runForm.caseId)"
-          >
-            <option value="">Select a case</option>
-            <option v-for="item in runCases" :key="item.id" :value="item.id">
-              {{ item.accessionNumber }} · {{ item.patient.firstName }} {{ item.patient.lastName }}
-            </option>
-          </select>
+          />
         </FormField>
         <FormField label="Slide" for-id="run-slide" required>
-          <select
+          <SearchSelect
             id="run-slide"
             v-model="runForm.slideId"
-            class="select"
+            :options="slideOptions"
             :disabled="loadingSlides || runSlides.length === 0"
-          >
-            <option value="">
-              {{ loadingSlides ? 'Loading slides…' : 'Select a slide awaiting staining' }}
-            </option>
-            <option v-for="slide in runSlides" :key="slide.id" :value="slide.id">
-              {{ slide.label }} · {{ slide.stainType }}
-            </option>
-          </select>
+            :placeholder="loadingSlides ? 'Loading slides…' : 'Select a slide awaiting staining'"
+          />
         </FormField>
         <div class="grid gap-3 sm:grid-cols-2">
           <FormField label="Stain / antibody" for-id="run-name" required
             ><input id="run-name" v-model="runForm.stainName" class="input"
           /></FormField>
-          <FormField label="Validated lot" for-id="run-lot" required
-            ><select id="run-lot" v-model="runForm.lotId" class="select">
-              <option v-for="lot in usableLots" :key="lot.id" :value="lot.id">
-                {{ lot.name }} · {{ lot.lotNumber }} · {{ lot.quantity }} {{ lot.unit }}
-              </option>
-            </select></FormField
-          >
+          <FormField label="Validated lot" for-id="run-lot" required>
+            <SearchSelect
+              id="run-lot"
+              v-model="runForm.lotId"
+              :options="lotOptions"
+              placeholder="Select a validated lot"
+            />
+          </FormField>
           <FormField label="Quantity used" for-id="run-qty"
             ><input
               id="run-qty"
@@ -545,13 +565,14 @@ onMounted(load);
           <FormField label="Product name" for-id="lot-name" required
             ><input id="lot-name" v-model="form.name" class="input"
           /></FormField>
-          <FormField label="Category" for-id="lot-category"
-            ><select id="lot-category" v-model="form.category" class="select">
-              <option v-for="category in REAGENT_CATEGORIES" :key="category" :value="category">
-                {{ REAGENT_CATEGORY_LABELS[category] }}
-              </option>
-            </select></FormField
-          >
+          <FormField label="Category" for-id="lot-category">
+            <SearchSelect
+              id="lot-category"
+              v-model="form.category"
+              :options="categoryOptions"
+              placeholder="Select category"
+            />
+          </FormField>
           <FormField label="Vendor" for-id="lot-vendor" required
             ><input id="lot-vendor" v-model="form.vendor" class="input"
           /></FormField>

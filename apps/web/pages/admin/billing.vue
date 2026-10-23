@@ -39,6 +39,24 @@ const form = reactive({
   dueAt: '',
 });
 
+const caseOptions = computed(() =>
+  cases.value.map((item) => ({
+    value: item.id,
+    label: `${item.accessionNumber} · ${item.patient.firstName} ${item.patient.lastName}`,
+    keywords: `${item.patient.firstName} ${item.patient.lastName} ${item.accessionNumber}`,
+  })),
+);
+const payerOptions = PAYER_TYPES.map((value) => ({ value, label: PAYER_TYPE_LABELS[value] }));
+const onlineProviderOptions = [
+  { value: 'PAYSTACK', label: 'Paystack' },
+  { value: 'FLUTTERWAVE', label: 'Flutterwave' },
+];
+const manualProviderOptions = [
+  { value: 'CASH', label: 'Cash' },
+  { value: 'TRANSFER', label: 'Bank transfer' },
+  { value: 'HMO', label: 'HMO remittance' },
+];
+
 const outstanding = computed(() =>
   invoices.value.reduce((sum, invoice) => sum + invoice.balance, 0),
 );
@@ -339,21 +357,24 @@ void ([] as InvoiceItem[]);
 
     <AppModal :open="createOpen" title="New invoice" @close="createOpen = false">
       <form class="space-y-3" @submit.prevent="createInvoice">
-        <FormField label="Case" for-id="invoice-case" required
-          ><select id="invoice-case" v-model="form.caseId" class="select">
-            <option v-for="item in cases" :key="item.id" :value="item.id">
-              {{ item.accessionNumber }} · {{ item.patient.firstName }} {{ item.patient.lastName }}
-            </option>
-          </select></FormField
-        >
+        <FormField label="Case" for-id="invoice-case" required>
+          <SearchSelect
+            id="invoice-case"
+            v-model="form.caseId"
+            :options="caseOptions"
+            placeholder="Search accession or patient"
+            search-placeholder="Accession, MRN or patient…"
+          />
+        </FormField>
         <div class="grid gap-3 sm:grid-cols-2">
-          <FormField label="Payer" for-id="invoice-payer"
-            ><select id="invoice-payer" v-model="form.payerType" class="select">
-              <option v-for="payer in PAYER_TYPES" :key="payer" :value="payer">
-                {{ PAYER_TYPE_LABELS[payer] }}
-              </option>
-            </select></FormField
-          >
+          <FormField label="Payer" for-id="invoice-payer">
+            <SearchSelect
+              id="invoice-payer"
+              v-model="form.payerType"
+              :options="payerOptions"
+              placeholder="Select payer"
+            />
+          </FormField>
           <FormField v-if="form.payerType === 'HMO'" label="HMO name" for-id="invoice-hmo"
             ><input id="invoice-hmo" v-model="form.hmoName" class="input" placeholder="Hygeia HMO"
           /></FormField>
@@ -391,12 +412,14 @@ void ([] as InvoiceItem[]);
       @close="payTarget = null"
     >
       <div v-if="payTarget" class="space-y-3">
-        <FormField label="Provider" for-id="pay-provider"
-          ><select id="pay-provider" v-model="provider" class="select">
-            <option value="PAYSTACK">Paystack</option>
-            <option value="FLUTTERWAVE">Flutterwave</option>
-          </select></FormField
-        >
+        <FormField label="Provider" for-id="pay-provider">
+          <SearchSelect
+            id="pay-provider"
+            v-model="provider"
+            :options="onlineProviderOptions"
+            placeholder="Select provider"
+          />
+        </FormField>
         <FormField label="Amount (₦)" for-id="pay-amount"
           ><input
             id="pay-amount"
@@ -431,13 +454,14 @@ void ([] as InvoiceItem[]);
     >
       <div v-if="manualTarget" class="space-y-3">
         <div class="grid gap-3 sm:grid-cols-2">
-          <FormField label="Method" for-id="manual-provider"
-            ><select id="manual-provider" v-model="manualProvider" class="select">
-              <option value="CASH">Cash</option>
-              <option value="TRANSFER">Bank transfer</option>
-              <option value="HMO">HMO remittance</option>
-            </select></FormField
-          >
+          <FormField label="Method" for-id="manual-provider">
+            <SearchSelect
+              id="manual-provider"
+              v-model="manualProvider"
+              :options="manualProviderOptions"
+              placeholder="Select method"
+            />
+          </FormField>
           <FormField label="Amount (₦)" for-id="manual-amount"
             ><input
               id="manual-amount"

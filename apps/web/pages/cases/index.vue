@@ -33,6 +33,23 @@ const filters = reactive({
   subspecialty: typeof route.query.subspecialty === 'string' ? route.query.subspecialty : '',
 });
 
+const statusOptions = computed(() => [
+  { value: '', label: 'All statuses' },
+  ...CASE_STATUSES.map((value) => ({ value, label: CASE_STATUS_LABELS[value] })),
+]);
+const priorityOptions = computed(() => [
+  { value: '', label: 'All priorities' },
+  ...PRIORITIES.map((value) => ({ value, label: PRIORITY_LABELS[value] })),
+]);
+const pathologistOptions = computed(() => [
+  { value: '', label: 'All pathologists' },
+  ...pathologists.value.map((person) => ({ value: person.id, label: person.name })),
+]);
+const subspecialtyOptions = computed(() => [
+  { value: '', label: 'All subspecialties' },
+  ...SUBSPECIALTIES.map((value) => ({ value, label: value })),
+]);
+
 const activeFilterCount = computed(
   () =>
     [
@@ -155,30 +172,30 @@ onMounted(async () => {
             aria-label="Search cases"
           />
         </div>
-        <select v-model="filters.status" class="select" aria-label="Filter by status">
-          <option value="">All statuses</option>
-          <option v-for="status in CASE_STATUSES" :key="status" :value="status">
-            {{ CASE_STATUS_LABELS[status] }}
-          </option>
-        </select>
-        <select v-model="filters.priority" class="select" aria-label="Filter by priority">
-          <option value="">All priorities</option>
-          <option v-for="priority in PRIORITIES" :key="priority" :value="priority">
-            {{ PRIORITY_LABELS[priority] }}
-          </option>
-        </select>
-        <select v-model="filters.pathologistId" class="select" aria-label="Filter by pathologist">
-          <option value="">All pathologists</option>
-          <option v-for="pathologist in pathologists" :key="pathologist.id" :value="pathologist.id">
-            {{ pathologist.name }}
-          </option>
-        </select>
-        <select v-model="filters.subspecialty" class="select" aria-label="Filter by subspecialty">
-          <option value="">All subspecialties</option>
-          <option v-for="subspecialty in SUBSPECIALTIES" :key="subspecialty" :value="subspecialty">
-            {{ subspecialty }}
-          </option>
-        </select>
+        <SearchSelect
+          v-model="filters.status"
+          :options="statusOptions"
+          aria-label="Filter by status"
+          placeholder="All statuses"
+        />
+        <SearchSelect
+          v-model="filters.priority"
+          :options="priorityOptions"
+          aria-label="Filter by priority"
+          placeholder="All priorities"
+        />
+        <SearchSelect
+          v-model="filters.pathologistId"
+          :options="pathologistOptions"
+          aria-label="Filter by pathologist"
+          placeholder="All pathologists"
+        />
+        <SearchSelect
+          v-model="filters.subspecialty"
+          :options="subspecialtyOptions"
+          aria-label="Filter by subspecialty"
+          placeholder="All subspecialties"
+        />
         <button
           v-if="activeFilterCount > 0"
           type="button"

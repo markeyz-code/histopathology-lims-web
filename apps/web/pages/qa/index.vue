@@ -23,6 +23,16 @@ const disagreementCode = ref('NONE');
 const severity = ref('MINOR');
 const actionPlan = ref('');
 
+const outcomeOptions = [
+  { value: 'AGREED', label: 'Agreed' },
+  { value: 'DISCREPANT', label: 'Discrepant' },
+];
+const discrepancyOptions = Object.entries(QA_DISCREPANCY_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
+const severityOptions = QA_SEVERITIES.map((value) => ({ value, label: value }));
+
 const canAct = computed(
   () =>
     selected.value?.reviewer?.id === auth.user?.id ||
@@ -260,28 +270,35 @@ onMounted(load);
           ><input id="qa-diagnosis" v-model="reviewDiagnosis" class="input" :disabled="!canAct"
         /></FormField>
         <div class="grid gap-3 sm:grid-cols-2">
-          <FormField label="Outcome" for-id="qa-outcome"
-            ><select id="qa-outcome" v-model="outcome" class="select" :disabled="!canAct">
-              <option value="AGREED">Agreed</option>
-              <option value="DISCREPANT">Discrepant</option>
-            </select></FormField
-          >
-          <FormField v-if="outcome === 'DISCREPANT'" label="Discrepancy code" for-id="qa-code"
-            ><select id="qa-code" v-model="disagreementCode" class="select" :disabled="!canAct">
-              <option v-for="(label, code) in QA_DISCREPANCY_LABELS" :key="code" :value="code">
-                {{ label }}
-              </option>
-            </select></FormField
-          >
+          <FormField label="Outcome" for-id="qa-outcome">
+            <SearchSelect
+              id="qa-outcome"
+              v-model="outcome"
+              :options="outcomeOptions"
+              :disabled="!canAct"
+              placeholder="Select outcome"
+            />
+          </FormField>
+          <FormField v-if="outcome === 'DISCREPANT'" label="Discrepancy code" for-id="qa-code">
+            <SearchSelect
+              id="qa-code"
+              v-model="disagreementCode"
+              :options="discrepancyOptions"
+              :disabled="!canAct"
+              placeholder="Select discrepancy"
+            />
+          </FormField>
         </div>
         <div v-if="outcome === 'DISCREPANT'" class="grid gap-3 sm:grid-cols-2">
-          <FormField label="Severity" for-id="qa-severity"
-            ><select id="qa-severity" v-model="severity" class="select" :disabled="!canAct">
-              <option v-for="level in QA_SEVERITIES" :key="level" :value="level">
-                {{ level }}
-              </option>
-            </select></FormField
-          >
+          <FormField label="Severity" for-id="qa-severity">
+            <SearchSelect
+              id="qa-severity"
+              v-model="severity"
+              :options="severityOptions"
+              :disabled="!canAct"
+              placeholder="Select severity"
+            />
+          </FormField>
           <FormField label="Action plan" for-id="qa-action"
             ><input
               id="qa-action"

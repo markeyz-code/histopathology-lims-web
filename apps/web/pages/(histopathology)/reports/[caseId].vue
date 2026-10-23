@@ -33,6 +33,13 @@ const opinionReviewer = ref('');
 const pathologists = ref<UserSummary[]>([]);
 const opinionSaving = ref(false);
 
+const reviewerOptions = computed(() => [
+  { value: '', label: 'Any available pathologist' },
+  ...pathologists.value
+    .filter((person) => person.id !== auth.user?.id)
+    .map((person) => ({ value: person.id, label: person.name })),
+]);
+
 const report = computed(() => form.report.value);
 const content = computed(() => form.content.value);
 const editableDraft = computed(() => form.isEditable.value && Boolean(report.value));
@@ -664,16 +671,12 @@ onBeforeRouteLeave(() => {
     >
       <div class="space-y-4">
         <FormField label="Reviewer" for-id="opinion-reviewer">
-          <select id="opinion-reviewer" v-model="opinionReviewer" class="select">
-            <option value="">Any available pathologist</option>
-            <option
-              v-for="person in pathologists.filter((item) => item.id !== auth.user?.id)"
-              :key="person.id"
-              :value="person.id"
-            >
-              {{ person.name }}
-            </option>
-          </select>
+          <SearchSelect
+            id="opinion-reviewer"
+            v-model="opinionReviewer"
+            :options="reviewerOptions"
+            placeholder="Any available pathologist"
+          />
         </FormField>
         <FormField label="Why is this needed?" for-id="opinion-reason" required>
           <textarea

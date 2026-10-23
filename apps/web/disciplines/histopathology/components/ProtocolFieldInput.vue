@@ -23,6 +23,10 @@ const booleanValue = computed(() =>
 const arrayValue = computed<string[]>(() =>
   Array.isArray(props.modelValue) ? props.modelValue : [],
 );
+const selectOptions = computed(() => [
+  { value: '', label: 'Select…' },
+  ...(props.field.options ?? []),
+]);
 
 function updateString(event: Event): void {
   emit('update:modelValue', (event.target as HTMLInputElement | HTMLTextAreaElement).value);
@@ -56,19 +60,14 @@ function choose(value: boolean): void {
     :error="error"
   >
     <template v-if="field.type === 'select'">
-      <select
+      <SearchSelect
         :id="id"
-        class="select"
-        :value="stringValue"
+        :model-value="stringValue"
+        :options="selectOptions"
         :disabled="disabled"
-        :aria-invalid="Boolean(error)"
-        @change="updateString"
-      >
-        <option value="">Select…</option>
-        <option v-for="option in field.options ?? []" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
+        placeholder="Select…"
+        @update:model-value="emit('update:modelValue', $event)"
+      />
     </template>
 
     <template v-else-if="field.type === 'multiselect'">

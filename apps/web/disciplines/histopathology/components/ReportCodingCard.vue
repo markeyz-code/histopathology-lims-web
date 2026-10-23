@@ -53,6 +53,17 @@ const fields = [
   },
 ];
 
+function codingOptions(system: CodingSystem) {
+  return [
+    { value: '', label: 'Not coded' },
+    ...options[system].map((option) => ({
+      value: option.code,
+      label: `${option.code} · ${option.display}`,
+      keywords: option.display,
+    })),
+  ];
+}
+
 function choose(system: CodingSystem, code: string): void {
   const entry = options[system].find((item) => item.code === code);
   const next: ReportCoding = { ...props.modelValue };
@@ -85,18 +96,16 @@ onMounted(load);
         <label :for="`coding-${field.system}`" class="label-caps">{{
           CODING_SYSTEM_LABELS[field.system]
         }}</label>
-        <select
+        <SearchSelect
           :id="`coding-${field.system}`"
-          class="select mt-1.5"
-          :value="props.modelValue[field.codeKey] ?? ''"
+          class="mt-1.5"
+          :model-value="props.modelValue[field.codeKey] ?? ''"
+          :options="codingOptions(field.system)"
           :disabled="disabled || loading"
-          @change="choose(field.system, ($event.target as HTMLSelectElement).value)"
-        >
-          <option value="">Not coded</option>
-          <option v-for="option in options[field.system]" :key="option.id" :value="option.code">
-            {{ option.code }} · {{ option.display }}
-          </option>
-        </select>
+          placeholder="Not coded"
+          search-placeholder="Search code or description…"
+          @update:model-value="choose(field.system, String($event))"
+        />
         <p class="mt-1.5 line-clamp-2 text-[10px] text-muted">
           {{ props.modelValue[field.displayKey] ?? `${field.hint} not selected` }}
         </p>

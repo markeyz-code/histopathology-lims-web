@@ -83,6 +83,27 @@ const priorityCopy: Record<Priority, string> = {
   FROZEN: 'Frozen section or immediate intra-operative diagnosis.',
 };
 
+const sexOptions = SEXES.map((sex) => ({ value: sex, label: SEX_LABELS[sex] }));
+const lateralityOptions = LATERALITIES.map((value) => ({
+  value,
+  label: LATERALITY_LABELS[value],
+}));
+const specimenTypeOptions = SPECIMEN_TYPE_PRESETS.map((value) => ({ value, label: value }));
+const subspecialtyOptions = computed(() => [
+  { value: '', label: 'Unassigned' },
+  ...SUBSPECIALTIES.map((value) => ({ value, label: value })),
+]);
+const disciplineOptions = computed(() =>
+  (auth.lab?.enabledDisciplines ?? ['HISTOPATHOLOGY']).map((value) => ({
+    value,
+    label: DISCIPLINE_LABELS[value],
+  })),
+);
+const pathologistOptions = computed(() => [
+  { value: '', label: 'Leave unassigned' },
+  ...pathologists.value.map((person) => ({ value: person.id, label: person.name })),
+]);
+
 const priorityIcon: Record<Priority, 'clock' | 'alert' | 'microscope'> = {
   ROUTINE: 'clock',
   URGENT: 'alert',
@@ -388,9 +409,12 @@ onMounted(async () => {
             </FormField>
           </div>
           <FormField label="Sex" for-id="sex" required :error="errorFor('patient.sex')">
-            <select id="sex" v-model="form.sex" class="select">
-              <option v-for="sex in SEXES" :key="sex" :value="sex">{{ SEX_LABELS[sex] }}</option>
-            </select>
+            <SearchSelect
+              id="sex"
+              v-model="form.sex"
+              :options="sexOptions"
+              placeholder="Select sex"
+            />
           </FormField>
           <FormField label="Date of birth" for-id="dob" :error="errorFor('patient.dateOfBirth')">
             <input id="dob" v-model="form.dateOfBirth" type="date" class="input" />
@@ -543,43 +567,32 @@ onMounted(async () => {
             for-id="accession-discipline"
             hint="Only disciplines enabled for this laboratory are listed."
           >
-            <select id="accession-discipline" v-model="form.discipline" class="select">
-              <option
-                v-for="discipline in auth.lab?.enabledDisciplines ?? ['HISTOPATHOLOGY']"
-                :key="discipline"
-                :value="discipline"
-              >
-                {{ DISCIPLINE_LABELS[discipline] }}
-              </option>
-            </select>
+            <SearchSelect
+              id="accession-discipline"
+              v-model="form.discipline"
+              :options="disciplineOptions"
+              placeholder="Select discipline"
+            />
           </FormField>
           <FormField label="Subspecialty" for-id="subspecialty" :error="errorFor('subspecialty')">
-            <select id="subspecialty" v-model="form.subspecialty" class="select">
-              <option value="">Unassigned</option>
-              <option
-                v-for="subspecialty in SUBSPECIALTIES"
-                :key="subspecialty"
-                :value="subspecialty"
-              >
-                {{ subspecialty }}
-              </option>
-            </select>
+            <SearchSelect
+              id="subspecialty"
+              v-model="form.subspecialty"
+              :options="subspecialtyOptions"
+              placeholder="Unassigned"
+            />
           </FormField>
           <FormField
             label="Assigned pathologist"
             for-id="assigned-pathologist"
             :error="errorFor('assignedPathologistId')"
           >
-            <select id="assigned-pathologist" v-model="form.assignedPathologistId" class="select">
-              <option value="">Leave unassigned</option>
-              <option
-                v-for="pathologist in pathologists"
-                :key="pathologist.id"
-                :value="pathologist.id"
-              >
-                {{ pathologist.name }}
-              </option>
-            </select>
+            <SearchSelect
+              id="assigned-pathologist"
+              v-model="form.assignedPathologistId"
+              :options="pathologistOptions"
+              placeholder="Leave unassigned"
+            />
           </FormField>
           <div class="sm:col-span-2 lg:col-span-3" data-field="clinicalHistory">
             <FormField
@@ -686,15 +699,12 @@ onMounted(async () => {
                 required
                 :error="errorFor(`specimens.${index}.specimenType`)"
               >
-                <select
+                <SearchSelect
                   :id="`specimen-type-${index}`"
                   v-model="specimen.specimenType"
-                  class="select"
-                >
-                  <option v-for="type in SPECIMEN_TYPE_PRESETS" :key="type" :value="type">
-                    {{ type }}
-                  </option>
-                </select>
+                  :options="specimenTypeOptions"
+                  placeholder="Select specimen type"
+                />
               </FormField>
               <div :data-field="`specimens.${index}.site`">
                 <FormField
@@ -716,15 +726,12 @@ onMounted(async () => {
                 :for-id="`specimen-laterality-${index}`"
                 :error="errorFor(`specimens.${index}.laterality`)"
               >
-                <select
+                <SearchSelect
                   :id="`specimen-laterality-${index}`"
                   v-model="specimen.laterality"
-                  class="select"
-                >
-                  <option v-for="laterality in LATERALITIES" :key="laterality" :value="laterality">
-                    {{ LATERALITY_LABELS[laterality] }}
-                  </option>
-                </select>
+                  :options="lateralityOptions"
+                  placeholder="Select laterality"
+                />
               </FormField>
               <FormField
                 label="Collected at"

@@ -28,6 +28,20 @@ const refreshing = ref(false);
 const pathologists = ref<UserSummary[]>([]);
 const assignmentSelection = ref('');
 
+const assignmentOptions = computed(() => [
+  { value: '', label: 'Unassigned' },
+  ...pathologists.value.map((person) => ({ value: person.id, label: person.name })),
+]);
+const stainOptions = STAIN_TYPES.map((value) => ({ value, label: STAIN_TYPE_LABELS[value] }));
+const rejectionOptions = REJECTION_REASON_CODES.map((value) => ({
+  value,
+  label: REJECTION_REASON_LABELS[value],
+}));
+const stainTypeOptions = [
+  { value: 'SPECIAL', label: 'Special stain' },
+  { value: 'IMMUNOHISTOCHEMISTRY', label: 'Immunohistochemistry' },
+];
+
 const hasHistopathology = computed(
   () => detail.value?.disciplines.includes('HISTOPATHOLOGY') ?? false,
 );
@@ -802,20 +816,14 @@ onMounted(async () => {
             </template>
             <template v-if="canAdmin && pathologists.length > 0">
               <div class="mt-3 flex gap-2">
-                <select
+                <SearchSelect
                   v-model="assignmentSelection"
-                  class="select input-sm min-w-0 flex-1"
+                  :options="assignmentOptions"
+                  :full-width="false"
+                  class="input-sm min-w-0 flex-1"
                   aria-label="Assign pathologist"
-                >
-                  <option value="">Unassigned</option>
-                  <option
-                    v-for="pathologist in pathologists"
-                    :key="pathologist.id"
-                    :value="pathologist.id"
-                  >
-                    {{ pathologist.name }}
-                  </option>
-                </select>
+                  placeholder="Unassigned"
+                />
                 <button
                   type="button"
                   class="btn btn-secondary btn-sm"
@@ -937,11 +945,12 @@ onMounted(async () => {
           />
         </FormField>
         <FormField label="Stain" for-id="cut-stain">
-          <select id="cut-stain" v-model="cutStain" class="select">
-            <option v-for="stain in STAIN_TYPES" :key="stain" :value="stain">
-              {{ STAIN_TYPE_LABELS[stain] }}
-            </option>
-          </select>
+          <SearchSelect
+            id="cut-stain"
+            v-model="cutStain"
+            :options="stainOptions"
+            placeholder="Select stain"
+          />
         </FormField>
         <div v-if="cutStain !== 'H_AND_E'" class="sm:col-span-2">
           <FormField label="Stain / antibody" for-id="cut-special" required>
@@ -1031,11 +1040,12 @@ onMounted(async () => {
 
     <AppModal v-model="rejectModal" title="Reject specimen" :persistent="rejectSaving">
       <FormField label="Reason code" for-id="reject-code" required>
-        <select id="reject-code" v-model="rejectCode" class="select">
-          <option v-for="code in REJECTION_REASON_CODES" :key="code" :value="code">
-            {{ REJECTION_REASON_LABELS[code] }}
-          </option>
-        </select>
+        <SearchSelect
+          id="reject-code"
+          v-model="rejectCode"
+          :options="rejectionOptions"
+          placeholder="Select reason code"
+        />
       </FormField>
       <FormField
         label="Reason"
@@ -1074,10 +1084,12 @@ onMounted(async () => {
       <div class="space-y-4">
         <div class="grid gap-4 sm:grid-cols-2">
           <FormField label="Stain type" for-id="stain-type">
-            <select id="stain-type" v-model="stainType" class="select">
-              <option value="SPECIAL">Special stain</option>
-              <option value="IMMUNOHISTOCHEMISTRY">Immunohistochemistry</option>
-            </select>
+            <SearchSelect
+              id="stain-type"
+              v-model="stainType"
+              :options="stainTypeOptions"
+              placeholder="Select stain type"
+            />
           </FormField>
           <FormField label="Stain / antibody" for-id="stain-name" required>
             <input id="stain-name" v-model="stainName" class="input" placeholder="CK7, p63, PAS…" />

@@ -13,6 +13,20 @@ const error = ref<string | null>(null);
 const channel = ref('');
 const status = ref('');
 const retrying = ref<string | null>(null);
+const channelOptions = [
+  { value: '', label: 'All channels' },
+  { value: 'IN_APP', label: 'In-app' },
+  { value: 'EMAIL', label: 'Email' },
+  { value: 'SMS', label: 'SMS' },
+  { value: 'WHATSAPP', label: 'WhatsApp' },
+];
+const statusOptions = [
+  { value: '', label: 'All states' },
+  { value: 'QUEUED', label: 'Queued' },
+  { value: 'SENT', label: 'Sent' },
+  { value: 'FAILED', label: 'Failed' },
+  { value: 'SKIPPED', label: 'Skipped' },
+];
 
 async function load(): Promise<void> {
   loading.value = true;
@@ -70,20 +84,24 @@ onMounted(load);
     <AdminNav />
 
     <div class="mb-4 flex flex-wrap gap-2">
-      <select v-model="channel" class="select w-auto" aria-label="Channel" @change="load">
-        <option value="">All channels</option>
-        <option value="IN_APP">In-app</option>
-        <option value="EMAIL">Email</option>
-        <option value="SMS">SMS</option>
-        <option value="WHATSAPP">WhatsApp</option>
-      </select>
-      <select v-model="status" class="select w-auto" aria-label="Status" @change="load">
-        <option value="">All states</option>
-        <option value="QUEUED">Queued</option>
-        <option value="SENT">Sent</option>
-        <option value="FAILED">Failed</option>
-        <option value="SKIPPED">Skipped</option>
-      </select>
+      <SearchSelect
+        v-model="channel"
+        :options="channelOptions"
+        :full-width="false"
+        class="w-auto"
+        aria-label="Channel"
+        placeholder="All channels"
+        @change="load"
+      />
+      <SearchSelect
+        v-model="status"
+        :options="statusOptions"
+        :full-width="false"
+        class="w-auto"
+        aria-label="Status"
+        placeholder="All states"
+        @change="load"
+      />
       <span class="ml-auto self-center font-mono text-[9px] uppercase tracking-caps text-muted"
         >{{ rows.length }} messages</span
       >

@@ -34,6 +34,14 @@ const entityOptions = [
   'Protocol',
   'CustodyEvent',
 ];
+const actionOptions = [
+  { value: '', label: 'All actions' },
+  ...AUDIT_ACTIONS.map((value) => ({ value, label: value.replace('_', ' ') })),
+];
+const entitySelectOptions = [
+  { value: '', label: 'All entities' },
+  ...entityOptions.map((value) => ({ value, label: value })),
+];
 
 async function load(): Promise<void> {
   loading.value = true;
@@ -103,16 +111,18 @@ onMounted(load);
     <AdminNav />
 
     <div class="panel mb-4 grid gap-2 p-3 sm:grid-cols-2 lg:grid-cols-5 sm:p-4">
-      <select v-model="action" class="select" aria-label="Filter by action">
-        <option value="">All actions</option>
-        <option v-for="value in AUDIT_ACTIONS" :key="value" :value="value">
-          {{ value.replace('_', ' ') }}
-        </option>
-      </select>
-      <select v-model="entityType" class="select" aria-label="Filter by entity">
-        <option value="">All entities</option>
-        <option v-for="value in entityOptions" :key="value" :value="value">{{ value }}</option>
-      </select>
+      <SearchSelect
+        v-model="action"
+        :options="actionOptions"
+        aria-label="Filter by action"
+        placeholder="All actions"
+      />
+      <SearchSelect
+        v-model="entityType"
+        :options="entitySelectOptions"
+        aria-label="Filter by entity"
+        placeholder="All entities"
+      />
       <label class="flex items-center gap-2 border border-line bg-raised px-2.5">
         <span class="font-mono text-[9px] uppercase tracking-wide2 text-muted">From</span>
         <input

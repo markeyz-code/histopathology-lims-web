@@ -9,6 +9,7 @@ const api = useApi();
 const toast = useToast();
 const { date } = useFormat();
 
+const subspecialtyOptions = SUBSPECIALTIES.map((value) => ({ value, label: value }));
 const protocols = ref<Protocol[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
@@ -308,15 +309,12 @@ onMounted(load);
           />
         </FormField>
         <FormField label="Subspecialty" for-id="protocol-subspecialty" required>
-          <select id="protocol-subspecialty" v-model="form.subspecialty" class="select">
-            <option
-              v-for="subspecialty in SUBSPECIALTIES"
-              :key="subspecialty"
-              :value="subspecialty"
-            >
-              {{ subspecialty }}
-            </option>
-          </select>
+          <SearchSelect
+            id="protocol-subspecialty"
+            v-model="form.subspecialty"
+            :options="subspecialtyOptions"
+            placeholder="Select subspecialty"
+          />
         </FormField>
         <label v-if="editing" class="flex items-center gap-2 text-xs sm:col-span-2">
           <input
