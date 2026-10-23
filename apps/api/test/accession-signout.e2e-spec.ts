@@ -129,6 +129,8 @@ describe('Accession to sign-out (e2e)', () => {
         phone: '+234 800 000 0000',
         email: 'lab@e2e.test',
         accessionPrefix: 'TST',
+        enabledDisciplines: ['HISTOPATHOLOGY', 'HAEMATOLOGY'],
+        accessionPrefixes: {},
         accessionFormat: '{PREFIX}-{YYYY}-{SEQ:6}',
         accessionCounters: {},
         tatHours: { FROZEN: 1, URGENT: 24, ROUTINE: 72 },
@@ -158,6 +160,8 @@ describe('Accession to sign-out (e2e)', () => {
         phone: null,
         email: null,
         accessionPrefix: 'OTH',
+        enabledDisciplines: ['HISTOPATHOLOGY'],
+        accessionPrefixes: {},
         accessionFormat: '{PREFIX}-{YYYY}-{SEQ:4}',
         accessionCounters: {},
         tatHours: { FROZEN: 1, URGENT: 24, ROUTINE: 72 },
@@ -194,6 +198,7 @@ describe('Accession to sign-out (e2e)', () => {
         email: `grosser-${unique}@e2e.test`,
         role: 'GROSSER',
         labId,
+        disciplines: ['HISTOPATHOLOGY'],
       },
       {
         _id: userIds.technologist,
@@ -201,6 +206,7 @@ describe('Accession to sign-out (e2e)', () => {
         email: `tech-${unique}@e2e.test`,
         role: 'TECHNOLOGIST',
         labId,
+        disciplines: ['HISTOPATHOLOGY'],
       },
       {
         _id: userIds.pathologist,
@@ -208,6 +214,7 @@ describe('Accession to sign-out (e2e)', () => {
         email: `path-${unique}@e2e.test`,
         role: 'PATHOLOGIST',
         labId,
+        disciplines: ['HISTOPATHOLOGY'],
       },
       {
         _id: userIds.admin,
@@ -326,6 +333,9 @@ describe('Accession to sign-out (e2e)', () => {
       tokens[key as keyof SeededUsers] = await login(labCode, email);
       expect(tokens[key as keyof SeededUsers]).toMatch(/.+/);
     }
+    const me = await request(http).get('/api/auth/me').set(auth(tokens.pathologist)).expect(200);
+    expect(me.body.user.disciplines).toEqual(['HISTOPATHOLOGY']);
+    expect(me.body.lab.enabledDisciplines).toContain('HISTOPATHOLOGY');
   });
 
   it('accessions a patient with a generated accession number and specimen label', async () => {
@@ -369,7 +379,17 @@ describe('Accession to sign-out (e2e)', () => {
     expect(response.body.patient.mrn).toMatch(/^MRN-\d{4}-\d{5}$/);
     expect(response.body.specimens[0].label).toBe('A');
     expect(response.body.specimens[0].status).toBe('ACCESSIONED');
+    expect(response.body.testRequests).toHaveLength(1);
+    expect(response.body.testRequests[0].discipline).toBe('HISTOPATHOLOGY');
+    expect(response.body.testRequests[0].status).toBe('RECEIVED');
     expect(response.body.custodyEvents.length).toBeGreaterThanOrEqual(2);
+
+    const requests = await request(http)
+      .get(`/api/test-requests?caseId=${caseId}`)
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(requests.body.items).toHaveLength(1);
+    expect(requests.body.items[0].accessionNumber).toBe(accessionNumber);
   });
 
   it('creates blocks and enforces roles and valid custody transitions', async () => {
@@ -424,6 +444,30 @@ describe('Accession to sign-out (e2e)', () => {
       .set(auth(tokens.referrer))
       .expect(403);
     await request(http).get('/api/patients').set(auth(tokens.referrer)).expect(403);
+  });
+
+  it('enforces laboratory and user discipline assignment on histopathology routes', async () => {
+    const created = await request(http)
+      .post('/api/users')
+      .set(auth(tokens.admin))
+      .send({
+        name: 'Dr Haem Only',
+        email: `haem-${unique}@e2e.test`,
+        password: 'HaemOnly#2026',
+        role: 'PATHOLOGIST',
+        disciplines: ['HAEMATOLOGY'],
+      })
+      .expect(201);
+    expect(created.body.disciplines).toEqual(['HAEMATOLOGY']);
+
+    const haemLogin = await request(http)
+      .post('/api/auth/login')
+      .send({ labCode: 'E2E1', email: `haem-${unique}@e2e.test`, password: 'HaemOnly#2026' })
+      .expect(200);
+    const haemToken = haemLogin.body.accessToken as string;
+    const denied = await request(http).get('/api/blocks').set(auth(haemToken)).expect(403);
+    expect(denied.body.message).toContain('not assigned');
+    await request(http).get('/api/test-requests').set(auth(haemToken)).expect(200);
   });
 
   it('cuts, stains and receives slides at the pathologist desk', async () => {
@@ -604,6 +648,11 @@ describe('Accession to sign-out (e2e)', () => {
       .expect(201);
     expect(released.body.releasedAt).toBeTruthy();
     expect(released.body.releasedBy.email).toBe(users.pathologist);
+    const releasedRequests = await request(http)
+      .get(`/api/test-requests?caseId=${caseId}`)
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(releasedRequests.body.items[0].status).toBe('RELEASED');
 
     const portalRequest = await request(http)
       .post('/api/portal/auth/request')
@@ -915,6 +964,13 @@ describe('Accession to sign-out (e2e)', () => {
       .set(auth(tokens.pathologist))
       .expect(200);
     expect(worklist.body.items.length).toBeLessThanOrEqual(2);
+    expect(worklist.body.items[0]?.testRequests?.[0]?.discipline).toBe('HISTOPATHOLOGY');
+
+    const configs = await request(http)
+      .get('/api/worklist/configs')
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(configs.body[0]?.discipline).toBe('HISTOPATHOLOGY');
 
     const dashboard = await request(http)
       .get('/api/dashboard?days=30')
