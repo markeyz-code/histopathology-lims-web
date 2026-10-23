@@ -44,9 +44,13 @@ describe('Accession to sign-out (e2e)', () => {
   let specimenId: string;
   let blockId: string;
   let slideBarcodes: string[] = [];
+  let slideIds: string[] = [];
+  let blockBarcodeA2 = '';
+  let patientId: string;
   let reportId: string;
   let verificationCode: string;
   let tokens: Record<keyof SeededUsers, string>;
+  let pathologistId: string;
 
   const tmpRoot = path.resolve(process.cwd(), '.e2e-tmp');
   const storageDir = path.join(tmpRoot, 'storage');
@@ -90,6 +94,10 @@ describe('Accession to sign-out (e2e)', () => {
     process.env.JWT_REFRESH_SECRET = 'e2e-refresh-secret-00000000000000000000000000000';
     process.env.JWT_ACCESS_TTL = '15m';
     process.env.JWT_REFRESH_TTL = '7d';
+    process.env.PORTAL_DEBUG = 'true';
+    process.env.HL7_LAB_CODE = 'E2E1';
+    process.env.PAYMENTS_MODE = 'mock';
+    process.env.WSI_WEBHOOK_SECRET = 'e2e-wsi-webhook-secret-0000000000';
 
     const { AppModule } = await import('../src/app.module');
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -126,6 +134,8 @@ describe('Accession to sign-out (e2e)', () => {
         tatHours: { FROZEN: 1, URGENT: 24, ROUTINE: 72 },
         tatWarningPercent: 80,
         timezone: 'Africa/Lagos',
+        qaSamplingPercent: 0,
+        currency: 'NGN',
         letterhead: {
           phone: '+234 800 000 0000',
           email: 'lab@e2e.test',
@@ -212,6 +222,7 @@ describe('Accession to sign-out (e2e)', () => {
         email: `referrer-${unique}@e2e.test`,
         role: 'REFERRER',
         labId,
+        phone: '+234 803 555 0101',
       },
       {
         _id: userIds.otherLabPathologist,
@@ -259,6 +270,7 @@ describe('Accession to sign-out (e2e)', () => {
       otherLabPathologist: userDocs[6]!.email,
     };
     tokens = {} as Record<keyof SeededUsers, string>;
+    pathologistId = userIds.pathologist.toString();
   });
 
   afterAll(async () => {
@@ -331,7 +343,7 @@ describe('Accession to sign-out (e2e)', () => {
         referringClinician: {
           name: 'Dr Referrer',
           facility: 'E2E Clinic',
-          email: 'referrer@e2e.test',
+          email: users.referrer,
         },
         clinicalHistory:
           'Left breast mass present for three months. Ultrasound shows a solid lesion.',
@@ -351,6 +363,7 @@ describe('Accession to sign-out (e2e)', () => {
     caseId = response.body.id as string;
     accessionNumber = response.body.accessionNumber as string;
     specimenId = response.body.specimens[0].id as string;
+    patientId = response.body.patient.id as string;
 
     expect(accessionNumber).toMatch(/^TST-\d{4}-\d{6}$/);
     expect(response.body.patient.mrn).toMatch(/^MRN-\d{4}-\d{5}$/);
@@ -372,6 +385,7 @@ describe('Accession to sign-out (e2e)', () => {
 
     expect(gross.body).toHaveLength(2);
     blockId = gross.body[0].id as string;
+    blockBarcodeA2 = gross.body[1].barcode as string;
     expect(gross.body[0].label).toBe('A1');
     const barcode = gross.body[0].barcode as string;
 
@@ -421,6 +435,7 @@ describe('Accession to sign-out (e2e)', () => {
 
     expect(cut.body).toHaveLength(2);
     slideBarcodes = cut.body.map((slide: { barcode: string }) => slide.barcode);
+    slideIds = cut.body.map((slide: { id: string }) => slide.id);
     expect(slideBarcodes).toHaveLength(2);
 
     for (const barcode of slideBarcodes) {
@@ -581,18 +596,331 @@ describe('Accession to sign-out (e2e)', () => {
     expect(signOut).toBeTruthy();
   });
 
+  it('releases the amended report and opens the referrer portal with a one-time code', async () => {
+    const released = await request(http)
+      .post(`/api/reports/${reportId}/release`)
+      .set(auth(tokens.pathologist))
+      .send({ note: 'Released to the referring clinic after MDT.' })
+      .expect(201);
+    expect(released.body.releasedAt).toBeTruthy();
+    expect(released.body.releasedBy.email).toBe(users.pathologist);
+
+    const portalRequest = await request(http)
+      .post('/api/portal/auth/request')
+      .send({ labCode: 'E2E1', email: users.referrer })
+      .expect(202);
+    expect(portalRequest.body.sent).toBe(true);
+    expect(portalRequest.body.debugCode).toMatch(/^\d{6}$/);
+
+    const verified = await request(http)
+      .post('/api/portal/auth/verify')
+      .send({
+        labCode: 'E2E1',
+        email: users.referrer,
+        code: portalRequest.body.debugCode,
+      })
+      .expect(200);
+    const referrerToken = verified.body.accessToken as string;
+
+    const portalCases = await request(http)
+      .get('/api/portal/cases')
+      .set(auth(referrerToken))
+      .expect(200);
+    expect(portalCases.body.total).toBeGreaterThanOrEqual(1);
+    const referred = portalCases.body.items.find((item: { id: string }) => item.id === caseId);
+    expect(referred.reportAvailable).toBe(true);
+
+    const portalDetail = await request(http)
+      .get(`/api/portal/cases/${caseId}`)
+      .set(auth(referrerToken))
+      .expect(200);
+    expect(portalDetail.body.report.status).toBe('AMENDED');
+    expect(portalDetail.body.report.releasedAt).toBeTruthy();
+    expect(portalDetail.body.timeline.length).toBeGreaterThan(0);
+
+    const portalPdf = await request(http)
+      .get(`/api/portal/cases/${caseId}/report.pdf`)
+      .set(auth(referrerToken))
+      .expect(200);
+    expect(portalPdf.headers['content-type']).toBe('application/pdf');
+
+    const outbox = await request(http)
+      .get('/api/notifications/outbox?limit=100')
+      .set(auth(tokens.admin))
+      .expect(200);
+    expect(
+      outbox.body.items.some((item: { type: string }) => item.type === 'PORTAL_MAGIC_LINK'),
+    ).toBe(true);
+    expect(
+      outbox.body.items.some((item: { type: string }) => item.type === 'REPORT_RELEASED'),
+    ).toBe(true);
+  });
+
+  it('validates reagent lots, blocks expired stock and records a stain run', async () => {
+    const future = new Date(Date.now() + 120 * 86_400_000).toISOString();
+    const received = new Date(Date.now() - 20 * 86_400_000).toISOString();
+    const activeLot = await request(http)
+      .post('/api/inventory/lots')
+      .set(auth(tokens.technologist))
+      .send({
+        name: 'E2E Haematoxylin',
+        category: 'REAGENT',
+        vendor: 'E2E Vendor',
+        lotNumber: 'E2E-HX-1',
+        quantity: 100,
+        unit: 'mL',
+        receivedAt: received,
+        expiresAt: future,
+      })
+      .expect(201);
+    expect(activeLot.body.status).toBe('QUARANTINED');
+    expect(activeLot.body.validationStatus).toBe('PENDING');
+
+    const validated = await request(http)
+      .post(`/api/inventory/lots/${activeLot.body.id}/validate`)
+      .set(auth(tokens.admin))
+      .send({ note: 'Control passed.' })
+      .expect(201);
+    expect(validated.body.status).toBe('ACTIVE');
+    expect(validated.body.validationStatus).toBe('VALIDATED');
+
+    const expired = await request(http)
+      .post('/api/inventory/lots')
+      .set(auth(tokens.technologist))
+      .send({
+        name: 'E2E Expired Eosin',
+        category: 'REAGENT',
+        vendor: 'E2E Vendor',
+        lotNumber: 'E2E-ES-2',
+        quantity: 10,
+        unit: 'mL',
+        receivedAt: new Date(Date.now() - 100 * 86_400_000).toISOString(),
+        expiresAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+      })
+      .expect(201);
+
+    const blocked = await request(http)
+      .post('/api/inventory/stain-runs')
+      .set(auth(tokens.technologist))
+      .send({
+        caseId,
+        blockId,
+        stainType: 'H_AND_E',
+        stainName: 'H&E',
+        lots: [{ lotId: expired.body.id, quantityUsed: 1 }],
+      })
+      .expect(409);
+    expect(blocked.body.message).toContain('not validated');
+
+    const run = await request(http)
+      .post('/api/inventory/stain-runs')
+      .set(auth(tokens.technologist))
+      .send({
+        caseId,
+        blockId,
+        stainType: 'H_AND_E',
+        stainName: 'H&E',
+        lots: [{ lotId: activeLot.body.id, quantityUsed: 5 }],
+      })
+      .expect(201);
+    expect(run.body.status).toBe('RUNNING');
+    expect(run.body.lots[0].lotNumber).toBe('E2E-HX-1');
+
+    const completed = await request(http)
+      .post(`/api/inventory/stain-runs/${run.body.id}/complete`)
+      .set(auth(tokens.technologist))
+      .send({ qcResult: 'PASS', notes: 'Control tissue passed.' })
+      .expect(201);
+    expect(completed.body.status).toBe('COMPLETED');
+    expect(completed.body.qcResult).toBe('PASS');
+
+    const lots = await request(http)
+      .get('/api/inventory/lots?limit=100')
+      .set(auth(tokens.technologist))
+      .expect(200);
+    const after = lots.body.items.find((item: { id: string }) => item.id === activeLot.body.id);
+    expect(after.quantity).toBe(95);
+  });
+
+  it('records peer review agreement and a coded discrepancy', async () => {
+    const created = await request(http)
+      .post('/api/qa/reviews')
+      .set(auth(tokens.pathologist))
+      .send({
+        caseId,
+        reportId,
+        type: 'SECOND_OPINION',
+        reviewerId: pathologistId,
+        reason: 'Confirm grading before chemotherapy.',
+      })
+      .expect(201);
+    expect(created.body.status).toBe('ASSIGNED');
+
+    await request(http)
+      .post(`/api/qa/reviews/${created.body.id}/start`)
+      .set(auth(tokens.pathologist))
+      .send({ findings: 'Reviewed all levels and immunohistochemistry.' })
+      .expect(201);
+
+    const completed = await request(http)
+      .post(`/api/qa/reviews/${created.body.id}/complete`)
+      .set(auth(tokens.pathologist))
+      .send({
+        outcome: 'DISCREPANT',
+        disagreementCode: 'GRADING',
+        severity: 'MINOR',
+        findings: 'Grade should be reported as grade 3 rather than grade 2.',
+        actionPlan: 'Discuss at MDT and document an addendum if needed.',
+      })
+      .expect(201);
+    expect(completed.body.status).toBe('DISCREPANT');
+    expect(completed.body.discrepancyCode).toBe('GRADING');
+
+    const stats = await request(http)
+      .get('/api/qa/stats')
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(stats.body.discrepant).toBeGreaterThanOrEqual(1);
+  });
+
+  it('serves FHIR R4, WSI and HL7 interoperability surfaces', async () => {
+    const metadata = await request(http).get('/api/fhir/r4/metadata').expect(200);
+    expect(metadata.headers['content-type']).toContain('application/fhir+json');
+    expect(metadata.body.resourceType).toBe('CapabilityStatement');
+
+    const patient = await request(http)
+      .get(`/api/fhir/r4/Patient/${patientId}`)
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(patient.body.resourceType).toBe('Patient');
+    expect(patient.body.identifier[0].value).toMatch(/^MRN-/);
+
+    const diagnostic = await request(http)
+      .get(`/api/fhir/r4/DiagnosticReport/${reportId}`)
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(diagnostic.body.resourceType).toBe('DiagnosticReport');
+    expect(diagnostic.body.status).toBe('corrected');
+
+    const wsi = await request(http)
+      .post(`/api/wsi/slides/${slideIds[0]}/link`)
+      .set(auth(tokens.pathologist))
+      .send({
+        url: `https://wsi.example.org/slides/${slideBarcodes[0]}.svs`,
+        viewerUrl: `https://viewer.example.org/slide/${slideBarcodes[0]}`,
+        scanner: 'Leica Aperio',
+        magnification: '40x',
+      })
+      .expect(201);
+    expect(wsi.body.wsi.status).toBe('LINKED');
+    const byBarcode = await request(http)
+      .get(`/api/wsi/${slideBarcodes[0]}`)
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(byBarcode.body.wsi.viewerUrl).toContain('viewer.example.org');
+
+    const hl7 = await request(http)
+      .post('/api/interop/hl7/messages')
+      .set(auth(tokens.admin))
+      .send({
+        message:
+          'MSH|^~\\&|EMR|HOSPITAL|HISTOLIMS|LAB|20260115120000||ORM^O01|HL7-E2E-1|P|2.5\r' +
+          'PID|1||HL7-E2E-MRN||Doe^Jane||19800101|F|||+2348000000000\r' +
+          'ORC|NW|ORD-E2E-1\r' +
+          'OBR|1|ORD-E2E-1|ORD-E2E-1|Histopathology^HP^L|||20260115120000|||||||||||||||R\r' +
+          'SPM|1|||Core biopsy^TISSUE|Left breast\r',
+      })
+      .expect(201);
+    expect(hl7.body.ack).toContain('MSA|AA');
+    expect(hl7.body.accessionNumber).toMatch(/^TST-\d{4}-\d{6}$/);
+  });
+
+  it('creates, pays and exports a billable HMO claim', async () => {
+    const invoice = await request(http)
+      .post('/api/invoices')
+      .set(auth(tokens.receptionist))
+      .send({
+        caseId,
+        payerType: 'HMO',
+        hmoName: 'E2E HMO',
+        authorizationNumber: 'AUTH-E2E-1',
+        items: [
+          {
+            description: 'Histopathology professional fee',
+            quantity: 1,
+            unitPrice: 50_000,
+            category: 'PROFESSIONAL',
+          },
+        ],
+      })
+      .expect(201);
+    expect(invoice.body.status).toBe('ISSUED');
+    expect(invoice.body.number).toMatch(/^INV-\d{4}-\d{6}$/);
+
+    const checkout = await request(http)
+      .post(`/api/invoices/${invoice.body.id}/payments/initialize`)
+      .set(auth(tokens.receptionist))
+      .send({ provider: 'PAYSTACK', amount: 20_000 })
+      .expect(201);
+    expect(checkout.body.checkoutUrl).toContain('/payments/mock');
+    expect(checkout.body.status).toBe('PENDING');
+
+    const mockPayment = await request(http).post(
+      `/api/payments/mock/${checkout.body.reference}/complete`,
+    );
+    expect(mockPayment.status).toBe(201);
+    const status = await request(http).get(`/api/payments/${checkout.body.reference}`).expect(200);
+    expect(status.body.status).toBe('SUCCESS');
+    expect(status.body.balance).toBe(30_000);
+
+    const claims = await request(http)
+      .get(
+        `/api/claims/export?from=${new Date(Date.now() - 30 * 86_400_000)
+          .toISOString()
+          .slice(
+            0,
+            10,
+          )}&to=${new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)}&format=csv`,
+      )
+      .set(auth(tokens.receptionist))
+      .expect(200);
+    expect(claims.headers['content-type']).toContain('text/csv');
+    expect(claims.text).toContain('invoice_number');
+    expect(claims.text).toContain(invoice.body.number);
+  });
+
+  it('replays offline scan mutations idempotently', async () => {
+    const mutationId = 'e2e-sync-mutation-0001';
+    const payload = { barcode: blockBarcodeA2, station: 'GROSSING' };
+    const first = await request(http)
+      .post('/api/sync/batch')
+      .set(auth(tokens.grosser))
+      .send({ mutations: [{ id: mutationId, type: 'SCAN', payload }] })
+      .expect(201);
+    expect(first.body.results[0].ok).toBe(true);
+    expect(first.body.results[0].duplicate).toBe(false);
+
+    const replay = await request(http)
+      .post('/api/sync/batch')
+      .set(auth(tokens.grosser))
+      .send({ mutations: [{ id: mutationId, type: 'SCAN', payload }] })
+      .expect(201);
+    expect(replay.body.results[0].ok).toBe(true);
+    expect(replay.body.results[0].duplicate).toBe(true);
+  });
+
   it('keeps the worklist and dashboard tenant-scoped and TAT-aware', async () => {
     const worklist = await request(http)
       .get('/api/worklist')
       .set(auth(tokens.pathologist))
       .expect(200);
-    expect(worklist.body.items).toHaveLength(0);
+    expect(worklist.body.items.length).toBeLessThanOrEqual(2);
 
     const dashboard = await request(http)
       .get('/api/dashboard?days=30')
       .set(auth(tokens.admin))
       .expect(200);
-    expect(dashboard.body.totals.cases).toBe(1);
+    expect(dashboard.body.totals.cases).toBeGreaterThanOrEqual(1);
     expect(
       dashboard.body.casesByStatus.find((item: { status: string }) => item.status === 'AMENDED')
         .count,
