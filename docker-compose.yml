@@ -52,6 +52,7 @@ services:
         condition: service_healthy
     ports:
       - '4000:4000'
+      - '2575:2575'
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       API_PORT: '4000'
@@ -64,6 +65,18 @@ services:
       QUEUES_ENABLED: 'true'
       SWAGGER_ENABLED: 'true'
       LOG_LEVEL: info
+      PORTAL_DEBUG: 'true'
+      PORTAL_TOKEN_TTL_MINUTES: '15'
+      NOTIFICATIONS_MODE: outbox
+      EMAIL_PROVIDER: log
+      SMS_PROVIDER: log
+      FHIR_ENABLED: 'true'
+      HL7_ENABLED: 'true'
+      HL7_MLLP_PORT: '2575'
+      HL7_LAB_CODE: HISTO
+      WSI_WEBHOOK_SECRET: local-wsi-webhook-secret-000000000000
+      PAYMENTS_MODE: mock
+      DEFAULT_CURRENCY: NGN
       STORAGE_DIR: /app/storage
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-local-access-secret-000000000000000000000000000000000}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-local-refresh-secret-00000000000000000000000000000000}

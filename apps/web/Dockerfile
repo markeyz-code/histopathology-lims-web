@@ -2,8 +2,15 @@
 FROM node:22-alpine AS build
 RUN corepack enable && corepack prepare pnpm@12.11.2 --activate
 WORKDIR /app
+
+# Dependency layer: only package manifests invalidate pnpm install.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY packages/shared/package.json packages/shared/package.json
+RUN pnpm install --frozen-lockfile --filter @lims/web... --ignore-scripts
+
 COPY . .
-RUN pnpm install --frozen-lockfile --filter @lims/web...
 RUN pnpm --filter @lims/web build
 
 FROM node:22-alpine AS runner
