@@ -1,5 +1,13 @@
-import type { AuthResponse, Lab, LoginInput, Role, User, Capability } from '@lims/shared';
-import { ROLE_CAPABILITIES } from '@lims/shared';
+import type {
+  AuthResponse,
+  Discipline,
+  Lab,
+  LoginInput,
+  Role,
+  User,
+  Capability,
+} from '@lims/shared';
+import { ROLE_CAPABILITIES, isClinicalRole } from '@lims/shared';
 
 interface MeResponse {
   user: User;
@@ -34,6 +42,10 @@ export const useAuthStore = defineStore('auth', () => {
     role.value ? ROLE_CAPABILITIES[role.value] : [],
   );
   const homePath = computed(() => (role.value === 'REFERRER' ? '/referrer' : '/'));
+  const enabledDisciplines = computed<Discipline[]>(
+    () => lab.value?.enabledDisciplines ?? ['HISTOPATHOLOGY'],
+  );
+  const disciplines = computed<Discipline[]>(() => user.value?.disciplines ?? []);
   const displayName = computed(() => user.value?.name ?? '');
   const initials = computed(() => {
     const parts = displayName.value.replace(/^Dr\s+/i, '').split(/\s+/);
@@ -44,6 +56,14 @@ export const useAuthStore = defineStore('auth', () => {
 
   function can(capability: Capability): boolean {
     return capabilities.value.includes(capability);
+  }
+
+  function canDiscipline(discipline: Discipline): boolean {
+    if (!enabledDisciplines.value.includes(discipline)) return false;
+    if (!role.value || !isClinicalRole(role.value)) return true;
+    return (disciplines.value.length > 0 ? disciplines.value : ['HISTOPATHOLOGY']).includes(
+      discipline,
+    );
   }
 
   function setSession(payload: AuthResponse): void {
@@ -141,9 +161,12 @@ export const useAuthStore = defineStore('auth', () => {
     role,
     capabilities,
     homePath,
+    enabledDisciplines,
+    disciplines,
     displayName,
     initials,
     can,
+    canDiscipline,
     login,
     logout,
     restore,

@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import type { Lab } from '@lims/shared';
-import { formatAccession, validateAccessionFormat } from '@lims/shared';
+import type { Discipline, Lab } from '@lims/shared';
+import {
+  DISCIPLINES,
+  DISCIPLINE_LABELS,
+  formatAccession,
+  validateAccessionFormat,
+} from '@lims/shared';
 
 definePageMeta({ title: 'Lab settings', capabilities: ['admin'] });
 useHead({ title: 'Laboratory settings' });
@@ -28,6 +33,8 @@ const form = reactive({
   ROUTINE: 72,
   qaSamplingPercent: 15,
   currency: 'NGN',
+  enabledDisciplines: ['HISTOPATHOLOGY'] as Discipline[],
+  accessionPrefixes: {} as Partial<Record<Discipline, string>>,
   timezone: 'Africa/Lagos',
   letterheadPhone: '',
   letterheadEmail: '',
@@ -62,6 +69,8 @@ function applyLab(lab: Lab): void {
   form.ROUTINE = lab.tatHours.ROUTINE;
   form.qaSamplingPercent = lab.qaSamplingPercent;
   form.currency = lab.currency;
+  form.enabledDisciplines = [...lab.enabledDisciplines];
+  form.accessionPrefixes = { ...(lab.accessionPrefixes ?? {}) };
   form.timezone = lab.timezone;
   form.letterheadPhone = lab.letterhead.phone ?? '';
   form.letterheadEmail = lab.letterhead.email ?? '';
@@ -92,6 +101,10 @@ async function save(): Promise<void> {
     formError.value = accessionProblem.value;
     return;
   }
+  if (form.enabledDisciplines.length === 0) {
+    formError.value = 'Enable at least one discipline.';
+    return;
+  }
   saving.value = true;
   try {
     const lab = await api.patch<Lab>('/labs/me', {
@@ -105,6 +118,8 @@ async function save(): Promise<void> {
       tatHours: { FROZEN: form.FROZEN, URGENT: form.URGENT, ROUTINE: form.ROUTINE },
       qaSamplingPercent: form.qaSamplingPercent,
       currency: form.currency,
+      enabledDisciplines: form.enabledDisciplines,
+      accessionPrefixes: form.accessionPrefixes,
       timezone: form.timezone,
       letterhead: {
         phone: form.letterheadPhone,
@@ -282,6 +297,50 @@ onMounted(load);
               class="input"
             />
           </FormField>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="border-b border-line px-5 py-4 sm:px-6">
+          <h2 class="label-caps">Disciplines</h2>
+          <p class="mt-1 text-xs text-muted">
+            Only enabled disciplines appear in navigation. Existing histopathology data is
+            unaffected.
+          </p>
+        </div>
+        <div class="space-y-5 p-5 sm:p-6">
+          <div class="grid gap-2 sm:grid-cols-2">
+            <label
+              v-for="discipline in DISCIPLINES"
+              :key="discipline"
+              class="flex cursor-pointer items-center gap-3 border border-line bg-canvas px-3 py-2.5 text-xs"
+            >
+              <input
+                v-model="form.enabledDisciplines"
+                type="checkbox"
+                :value="discipline"
+                class="h-4 w-4 accent-[rgb(var(--accent))]"
+              />
+              <span>{{ DISCIPLINE_LABELS[discipline] }}</span>
+            </label>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <FormField
+              v-for="discipline in form.enabledDisciplines"
+              :key="`prefix-${discipline}`"
+              :label="`${DISCIPLINE_LABELS[discipline]} prefix`"
+              :for-id="`prefix-${discipline}`"
+              hint="Optional. Leave blank to use the laboratory prefix above."
+            >
+              <input
+                :id="`prefix-${discipline}`"
+                v-model="form.accessionPrefixes[discipline]"
+                class="input font-mono uppercase"
+                maxlength="8"
+                :placeholder="form.accessionPrefix"
+              />
+            </FormField>
+          </div>
         </div>
       </section>
 

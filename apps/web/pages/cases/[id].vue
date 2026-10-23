@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { Block, CaseDetail, Slide, Specimen, StainType, UserSummary } from '@lims/shared';
 import {
+  DISCIPLINE_LABELS,
   PRIORITY_LABELS,
   REJECTION_REASON_CODES,
   REJECTION_REASON_LABELS,
   STAIN_TYPES,
   STAIN_TYPE_LABELS,
+  TEST_REQUEST_STATUS_LABELS,
 } from '@lims/shared';
 
 definePageMeta({ title: 'Case detail', capabilities: ['cases'] });
@@ -26,10 +28,13 @@ const refreshing = ref(false);
 const pathologists = ref<UserSummary[]>([]);
 const assignmentSelection = ref('');
 
-const canGross = computed(() => auth.can('grossing') && !isClosed.value);
-const canCut = computed(() => auth.can('lab_work') && !isClosed.value);
-const canReport = computed(() => auth.can('reports') && !isClosed.value);
-const canOpenReport = computed(() => auth.can('reports'));
+const hasHistopathology = computed(
+  () => detail.value?.disciplines.includes('HISTOPATHOLOGY') ?? false,
+);
+const canGross = computed(() => auth.can('grossing') && !isClosed.value && hasHistopathology.value);
+const canCut = computed(() => auth.can('lab_work') && !isClosed.value && hasHistopathology.value);
+const canReport = computed(() => auth.can('reports') && !isClosed.value && hasHistopathology.value);
+const canOpenReport = computed(() => auth.can('reports') && hasHistopathology.value);
 const canAdmin = computed(() => auth.can('admin'));
 const isPathologist = computed(() => auth.role === 'PATHOLOGIST');
 const isClosed = computed(
@@ -389,6 +394,14 @@ onMounted(async () => {
         <span>Received {{ date(detail.receivedAt) }}</span>
         <span v-if="detail.assignedPathologist">{{ detail.assignedPathologist.name }}</span>
         <span v-else class="text-warning">Unassigned</span>
+        <span
+          v-for="request in detail.testRequests"
+          :key="request.id"
+          class="inline-flex items-center gap-1 border border-line bg-surface px-2 py-1 font-mono text-[9px] uppercase tracking-wide2 text-muted"
+        >
+          {{ DISCIPLINE_LABELS[request.discipline] }} ·
+          {{ TEST_REQUEST_STATUS_LABELS[request.status] }}
+        </span>
       </template>
     </PageHeader>
 

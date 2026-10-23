@@ -67,7 +67,7 @@ async function signOut(): Promise<void> {
       <div
         class="mx-auto flex max-w-shell flex-col justify-between gap-2 font-mono text-[9px] uppercase tracking-[0.14em] text-muted sm:flex-row"
       >
-        <span>Histopathology LIMS · Referral portal</span>
+        <span>Laboratory LIMS · Referral portal</span>
         <span>{{ auth.lab?.name ?? 'Clinical system' }} · access monitored and audited</span>
       </div>
     </footer>

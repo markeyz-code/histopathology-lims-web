@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import type { Paginated, Role, User } from '@lims/shared';
-import { ROLES, ROLE_LABELS, createUserSchema, resetPasswordSchema } from '@lims/shared';
+import {
+  DISCIPLINES,
+  DISCIPLINE_LABELS,
+  ROLES,
+  ROLE_LABELS,
+  createUserSchema,
+  isClinicalRole,
+  resetPasswordSchema,
+} from '@lims/shared';
 
 definePageMeta({ title: 'Staff', capabilities: ['admin'] });
 useHead({ title: 'Staff accounts' });
@@ -29,6 +37,7 @@ const createForm = reactive({
   role: 'TECHNOLOGIST' as Role,
   password: '',
   subspecialties: '',
+  disciplines: ['HISTOPATHOLOGY'] as string[],
 });
 
 const resetOpen = ref(false);
@@ -37,6 +46,17 @@ const resetPassword = ref('');
 const resetSaving = ref(false);
 const resetError = ref<string | null>(null);
 const toggleSaving = ref<string | null>(null);
+
+function disciplineNames(user: User): string {
+  return user.disciplines.length
+    ? user.disciplines.map((discipline) => DISCIPLINE_LABELS[discipline]).join(' · ')
+    : 'No discipline';
+}
+const disciplineOpen = ref(false);
+const disciplineTarget = ref<User | null>(null);
+const disciplineForm = ref<string[]>([]);
+const disciplineSaving = ref(false);
+const disciplineError = ref<string | null>(null);
 
 async function load(): Promise<void> {
   loading.value = true;
@@ -76,6 +96,7 @@ function openCreate(): void {
   createForm.role = 'TECHNOLOGIST';
   createForm.password = '';
   createForm.subspecialties = '';
+  createForm.disciplines = ['HISTOPATHOLOGY'];
   createOpen.value = true;
 }
 
@@ -87,6 +108,7 @@ async function submitCreate(): Promise<void> {
     phone: createForm.phone,
     role: createForm.role,
     password: createForm.password,
+    disciplines: createForm.disciplines,
     subspecialties: createForm.subspecialties
       .split(',')
       .map((item) => item.trim())
@@ -106,6 +128,31 @@ async function submitCreate(): Promise<void> {
     createError.value = apiErrorMessage(caught);
   } finally {
     createSaving.value = false;
+  }
+}
+
+function openDisciplines(user: User): void {
+  disciplineTarget.value = user;
+  disciplineForm.value = [...user.disciplines];
+  disciplineError.value = null;
+  disciplineOpen.value = true;
+}
+
+async function saveDisciplines(): Promise<void> {
+  if (!disciplineTarget.value) return;
+  disciplineSaving.value = true;
+  disciplineError.value = null;
+  try {
+    await api.patch<User>(`/users/${disciplineTarget.value.id}`, {
+      disciplines: disciplineForm.value,
+    });
+    toast.success('Disciplines updated', disciplineTarget.value.name);
+    disciplineOpen.value = false;
+    await load();
+  } catch (caught) {
+    disciplineError.value = apiErrorMessage(caught);
+  } finally {
+    disciplineSaving.value = false;
   }
 }
 
@@ -232,6 +279,12 @@ onMounted(() => load());
                 >
                   {{ ROLE_LABELS[user.role] }}
                 </span>
+                <p
+                  v-if="isClinicalRole(user.role)"
+                  class="mt-1 font-mono text-[8px] uppercase tracking-wide2 text-muted"
+                >
+                  {{ disciplineNames(user) }}
+                </p>
               </td>
               <td class="max-w-[220px] text-xs text-muted">
                 {{ user.subspecialties.length > 0 ? user.subspecialties.join(', ') : '—' }}
@@ -253,6 +306,14 @@ onMounted(() => load());
               </td>
               <td>
                 <div class="flex justify-end gap-1">
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-sm"
+                    :disabled="resetSaving"
+                    @click="openDisciplines(user)"
+                  >
+                    Disciplines
+                  </button>
                   <button
                     type="button"
                     class="btn btn-ghost btn-sm"
@@ -349,6 +410,28 @@ onMounted(() => load());
             <option v-for="role in ROLES" :key="role" :value="role">{{ ROLE_LABELS[role] }}</option>
           </select>
         </FormField>
+
+        <div v-if="isClinicalRole(createForm.role)" class="border border-line bg-canvas p-3">
+          <p class="label-caps mb-2">Assigned disciplines</p>
+          <div class="grid gap-2 sm:grid-cols-2">
+            <label
+              v-for="discipline in DISCIPLINES"
+              :key="`new-${discipline}`"
+              class="flex cursor-pointer items-center gap-2 text-xs"
+            >
+              <input
+                v-model="createForm.disciplines"
+                type="checkbox"
+                :value="discipline"
+                class="h-4 w-4 accent-[rgb(var(--accent))]"
+              />
+              {{ DISCIPLINE_LABELS[discipline] }}
+            </label>
+          </div>
+          <p class="mt-2 text-[10px] text-muted">
+            Required for clinical roles. Lab-wide roles are not restricted by discipline.
+          </p>
+        </div>
         <FormField
           label="Temporary password"
           for-id="new-password"
@@ -393,6 +476,57 @@ onMounted(() => load());
           @click="submitCreate"
         >
           <AppIcon name="plus" :size="13" /> Create account
+        </button>
+      </template>
+    </AppModal>
+
+    <AppModal
+      v-model="disciplineOpen"
+      title="Discipline assignment"
+      :description="disciplineTarget?.name"
+      :persistent="disciplineSaving"
+    >
+      <div
+        v-if="disciplineError"
+        class="mb-4 border border-danger/40 bg-danger/[0.05] p-3 text-xs text-danger"
+        role="alert"
+      >
+        {{ disciplineError }}
+      </div>
+      <div class="grid gap-2 sm:grid-cols-2">
+        <label
+          v-for="discipline in DISCIPLINES"
+          :key="`edit-${discipline}`"
+          class="flex cursor-pointer items-center gap-2 border border-line bg-canvas p-3 text-xs"
+        >
+          <input
+            v-model="disciplineForm"
+            type="checkbox"
+            :value="discipline"
+            class="h-4 w-4 accent-[rgb(var(--accent))]"
+          />
+          {{ DISCIPLINE_LABELS[discipline] }}
+        </label>
+      </div>
+      <p class="mt-3 text-[10px] leading-relaxed text-muted">
+        Clinical roles need at least one discipline. Lab-wide roles can leave this empty.
+      </p>
+      <template #footer>
+        <button
+          type="button"
+          class="btn btn-ghost"
+          :disabled="disciplineSaving"
+          @click="disciplineOpen = false"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          :disabled="disciplineSaving"
+          @click="saveDisciplines"
+        >
+          Save disciplines
         </button>
       </template>
     </AppModal>

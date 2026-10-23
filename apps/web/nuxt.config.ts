@@ -8,6 +8,11 @@ try {
 }
 
 export default defineNuxtConfig({
+  components: [
+    { path: '~/components', pathPrefix: false },
+    { path: '~/disciplines/histopathology/components', pathPrefix: false },
+  ],
+  imports: { dirs: ['composables', 'disciplines/histopathology/composables'] },
   ssr: false,
   devtools: { enabled: false },
   compatibilityDate: '2025-07-15',
@@ -16,20 +21,20 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:4000/api',
-      appName: process.env.NUXT_PUBLIC_APP_NAME || 'Histopathology LIMS',
+      appName: process.env.NUXT_PUBLIC_APP_NAME || 'Laboratory LIMS',
       webBase: process.env.NUXT_PUBLIC_WEB_BASE || 'http://localhost:3000',
     },
   },
   app: {
     head: {
       htmlAttrs: { lang: 'en' },
-      title: 'Histopathology LIMS',
-      titleTemplate: '%s · Histopathology LIMS',
+      title: 'Laboratory LIMS',
+      titleTemplate: '%s · Laboratory LIMS',
       meta: [
         {
           name: 'description',
           content:
-            'Block-and-slide level histopathology laboratory information management: accessioning, custody, reporting and turnaround tracking.',
+            'Multi-discipline laboratory information management: shared accessioning, custody, worklists, reporting and turnaround tracking with a complete histopathology module.',
         },
         { name: 'theme-color', content: '#171A1C' },
         { name: 'color-scheme', content: 'light dark' },
@@ -62,7 +67,7 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
-      name: 'Histopathology LIMS',
+      name: 'Laboratory LIMS',
       short_name: 'Histo LIMS',
       description:
         'Block and slide custody, synoptic reporting and TAT control for histopathology.',

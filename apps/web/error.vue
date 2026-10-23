@@ -12,7 +12,7 @@ onMounted(async () => {
   await nextTick();
   // Nuxt's global head can reapply the default title after the error view mounts.
   setTimeout(() => {
-    document.title = `${pageTitle.value} · Histopathology LIMS`;
+    document.title = `${pageTitle.value} · Laboratory LIMS`;
   }, 50);
 });
 const auth = useAuthStore();
@@ -63,7 +63,7 @@ function goHome(): void {
     <footer
       class="border-t border-line px-5 py-4 font-mono text-[9px] uppercase tracking-[0.14em] text-muted sm:px-8"
     >
-      Histopathology LIMS · Phase 1
+      Laboratory LIMS · Phase 1.5
     </footer>
   </div>
 </template>

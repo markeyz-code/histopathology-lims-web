@@ -51,7 +51,7 @@
             class="flex items-center justify-between gap-4 font-mono text-[9px] uppercase tracking-[0.16em] text-rail-muted"
           >
             <span>Phase 2 / 3 · Tracking, portal &amp; interoperability</span>
-            <span>v2.0</span>
+            <span>v1.5</span>
           </div>
         </div>
       </aside>
@@ -81,7 +81,7 @@
           <div
             class="flex flex-col justify-between gap-2 font-mono text-[9px] uppercase tracking-[0.14em] text-muted sm:flex-row"
           >
-            <span>Histopathology LIMS · Clinical system</span>
+            <span>Laboratory LIMS · Clinical system</span>
             <span>Access is monitored and audited</span>
           </div>
         </footer>

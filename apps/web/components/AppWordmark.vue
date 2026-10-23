@@ -14,7 +14,7 @@ withDefaults(
       class="relative flex shrink-0 items-center justify-center bg-accent font-display text-accent-ink"
       :class="compact ? 'h-8 w-8 text-base' : 'h-10 w-10 text-lg'"
     >
-      <span class="relative z-10 leading-none">H</span>
+      <span class="relative z-10 leading-none">L</span>
       <span
         class="absolute bottom-1 right-1 h-1 w-1"
         :class="variant === 'rail' ? 'bg-rail' : 'bg-accent-ink/70'"
@@ -29,7 +29,7 @@ withDefaults(
           compact ? 'text-[9px]' : 'text-[10px]',
         ]"
       >
-        Histopathology
+        Laboratory
       </span>
       <span
         class="mt-1 block truncate font-mono uppercase leading-none tracking-[0.12em]"
@@ -38,7 +38,7 @@ withDefaults(
           compact ? 'text-[7px]' : 'text-[8px]',
         ]"
       >
-        Laboratory system
+        Information system
       </span>
     </span>
   </div>

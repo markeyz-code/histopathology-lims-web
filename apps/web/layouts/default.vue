@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ROLE_LABELS } from '@lims/shared';
-import type { Capability } from '@lims/shared';
+import type { Capability, Discipline } from '@lims/shared';
 import type { IconName } from '~/types/icons';
 
 const auth = useAuthStore();
@@ -15,6 +15,7 @@ interface NavItem {
   label: string;
   icon: IconName;
   capability: Capability;
+  discipline?: Discipline;
   exact?: boolean;
 }
 
@@ -30,8 +31,20 @@ const sections: NavSection[] = [
       { to: '/', label: 'Dashboard', icon: 'dashboard', capability: 'dashboard', exact: true },
       { to: '/accession', label: 'Accession', icon: 'plus', capability: 'accession' },
       { to: '/cases', label: 'Cases', icon: 'cases', capability: 'cases' },
-      { to: '/scan', label: 'Scan station', icon: 'scan', capability: 'scan' },
-      { to: '/worklist', label: 'Worklist', icon: 'worklist', capability: 'worklist' },
+      {
+        to: '/scan',
+        label: 'Scan station',
+        icon: 'scan',
+        capability: 'scan',
+        discipline: 'HISTOPATHOLOGY',
+      },
+      {
+        to: '/worklist',
+        label: 'Worklist',
+        icon: 'worklist',
+        capability: 'worklist',
+        discipline: 'HISTOPATHOLOGY',
+      },
       { to: '/qa', label: 'QA review', icon: 'shield', capability: 'qa' },
       { to: '/admin/billing', label: 'Billing', icon: 'billing', capability: 'billing' },
     ],
@@ -44,7 +57,13 @@ const sections: NavSection[] = [
     label: 'Administration',
     items: [
       { to: '/admin/users', label: 'Staff', icon: 'users', capability: 'admin' },
-      { to: '/admin/protocols', label: 'Protocols', icon: 'protocols', capability: 'admin' },
+      {
+        to: '/admin/protocols',
+        label: 'Protocols',
+        icon: 'protocols',
+        capability: 'admin',
+        discipline: 'HISTOPATHOLOGY',
+      },
       { to: '/admin/inventory', label: 'Inventory', icon: 'beaker', capability: 'inventory' },
       { to: '/admin/notifications', label: 'Message outbox', icon: 'send', capability: 'admin' },
       { to: '/admin/integrations', label: 'Integrations', icon: 'external', capability: 'interop' },
@@ -58,7 +77,10 @@ const visibleSections = computed(() =>
   sections
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => auth.can(item.capability)),
+      items: section.items.filter(
+        (item) =>
+          auth.can(item.capability) && (!item.discipline || auth.canDiscipline(item.discipline)),
+      ),
     }))
     .filter((section) => section.items.length > 0),
 );
@@ -201,7 +223,7 @@ onBeforeUnmount(() => {
             class="hidden min-w-0 items-center gap-2 font-mono text-[9px] uppercase tracking-[0.18em] text-muted sm:flex"
           >
             <span class="text-accent">●</span>
-            <span class="truncate">{{ pageTitle || 'Histopathology LIMS' }}</span>
+            <span class="truncate">{{ pageTitle || 'Laboratory LIMS' }}</span>
           </p>
 
           <form
@@ -252,7 +274,7 @@ onBeforeUnmount(() => {
       <footer
         class="mx-auto flex w-full max-w-shell flex-col gap-1 border-t border-line px-4 py-4 font-mono text-[9px] uppercase tracking-[0.14em] text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
       >
-        <span>Histopathology LIMS · Phase 2/3</span>
+        <span>Laboratory LIMS · Phase 1.5</span>
         <span>{{ auth.lab?.name }} · {{ auth.lab?.code }}</span>
       </footer>
     </div>

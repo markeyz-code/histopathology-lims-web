@@ -2,6 +2,7 @@
 import type {
   AccessionInput,
   CaseDetail,
+  Discipline,
   Laterality,
   Priority,
   Sex,
@@ -10,6 +11,7 @@ import type {
 import {
   LATERALITIES,
   LATERALITY_LABELS,
+  DISCIPLINE_LABELS,
   PRIORITIES,
   PRIORITY_LABELS,
   SEXES,
@@ -61,6 +63,7 @@ const form = reactive({
   clinicalHistory: '',
   clinicalDiagnosis: '',
   priority: 'ROUTINE' as Priority,
+  discipline: 'HISTOPATHOLOGY' as Discipline,
   subspecialty: '',
   assignedPathologistId: '',
   specimens: [
@@ -133,6 +136,7 @@ function buildPayload(): AccessionInput {
     clinicalHistory: form.clinicalHistory,
     clinicalDiagnosis: form.clinicalDiagnosis || undefined,
     priority: form.priority,
+    discipline: form.discipline,
     subspecialty: form.subspecialty || undefined,
     assignedPathologistId: form.assignedPathologistId || undefined,
     specimens: form.specimens.map((specimen) => ({
@@ -533,6 +537,21 @@ onMounted(async () => {
               class="input"
               placeholder="clinician@example.com"
             />
+          </FormField>
+          <FormField
+            label="Discipline"
+            for-id="accession-discipline"
+            hint="Only disciplines enabled for this laboratory are listed."
+          >
+            <select id="accession-discipline" v-model="form.discipline" class="select">
+              <option
+                v-for="discipline in auth.lab?.enabledDisciplines ?? ['HISTOPATHOLOGY']"
+                :key="discipline"
+                :value="discipline"
+              >
+                {{ DISCIPLINE_LABELS[discipline] }}
+              </option>
+            </select>
           </FormField>
           <FormField label="Subspecialty" for-id="subspecialty" :error="errorFor('subspecialty')">
             <select id="subspecialty" v-model="form.subspecialty" class="select">
