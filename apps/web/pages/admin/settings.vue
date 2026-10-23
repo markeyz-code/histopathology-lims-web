@@ -26,6 +26,8 @@ const form = reactive({
   FROZEN: 1,
   URGENT: 24,
   ROUTINE: 72,
+  qaSamplingPercent: 15,
+  currency: 'NGN',
   timezone: 'Africa/Lagos',
   letterheadPhone: '',
   letterheadEmail: '',
@@ -58,6 +60,8 @@ function applyLab(lab: Lab): void {
   form.FROZEN = lab.tatHours.FROZEN;
   form.URGENT = lab.tatHours.URGENT;
   form.ROUTINE = lab.tatHours.ROUTINE;
+  form.qaSamplingPercent = lab.qaSamplingPercent;
+  form.currency = lab.currency;
   form.timezone = lab.timezone;
   form.letterheadPhone = lab.letterhead.phone ?? '';
   form.letterheadEmail = lab.letterhead.email ?? '';
@@ -99,6 +103,8 @@ async function save(): Promise<void> {
       accessionFormat: form.accessionFormat,
       tatWarningPercent: form.tatWarningPercent,
       tatHours: { FROZEN: form.FROZEN, URGENT: form.URGENT, ROUTINE: form.ROUTINE },
+      qaSamplingPercent: form.qaSamplingPercent,
+      currency: form.currency,
       timezone: form.timezone,
       letterhead: {
         phone: form.letterheadPhone,
@@ -274,6 +280,35 @@ onMounted(load);
               min="50"
               max="95"
               class="input"
+            />
+          </FormField>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="border-b border-line px-5 py-4 sm:px-6">
+          <h2 class="label-caps">Quality &amp; billing</h2>
+          <p class="mt-1 text-xs text-muted">
+            Automatic peer-review sampling and the currency used for new invoices.
+          </p>
+        </div>
+        <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+          <FormField label="Peer-review sampling (%)" for-id="qa-sampling">
+            <input
+              id="qa-sampling"
+              v-model.number="form.qaSamplingPercent"
+              type="number"
+              min="0"
+              max="100"
+              class="input"
+            />
+          </FormField>
+          <FormField label="Billing currency" for-id="lab-currency">
+            <input
+              id="lab-currency"
+              v-model="form.currency"
+              maxlength="3"
+              class="input font-mono uppercase"
             />
           </FormField>
         </div>

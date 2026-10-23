@@ -45,8 +45,8 @@ export function useCases() {
     recut(slideId: string, reason: string): Promise<Slide> {
       return api.post<Slide>(`/slides/${slideId}/recut`, { reason });
     },
-    rejectSpecimen(specimenId: string, reason: string): Promise<Specimen> {
-      return api.post<Specimen>(`/specimens/${specimenId}/reject`, { reason });
+    rejectSpecimen(specimenId: string, reason: string, reasonCode = 'OTHER'): Promise<Specimen> {
+      return api.post<Specimen>(`/specimens/${specimenId}/reject`, { reason, reasonCode });
     },
     pathologists(): Promise<UserSummary[]> {
       return api.get<UserSummary[]>('/users/pathologists');

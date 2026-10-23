@@ -52,7 +52,8 @@ export type IconName =
   | 'stethoscope'
   | 'beaker'
   | 'scale'
-  | 'qr';
+  | 'qr'
+  | 'billing';
 
 export const iconPaths: Record<IconName, readonly string[]> = {
   dashboard: ['M3 3h7v7H3z', 'M14 3h7v4h-7z', 'M14 11h7v10h-7z', 'M3 14h7v7H3z'],
@@ -178,6 +179,7 @@ export const iconPaths: Record<IconName, readonly string[]> = {
   ],
   beaker: ['M6 2h12', 'M7 2v7L4 20a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2L17 9V2', 'M6 14h12'],
   scale: ['M12 3v18', 'M5 6h14', 'M5 6l-3 7h6z', 'M19 6l-3 7h6z', 'M8 21h8'],
+  billing: ['M3 7h18v10H3z', 'M3 10h18', 'M7 14h3', 'M16 13.5h1.5'],
   qr: [
     'M3 3h7v7H3z',
     'M14 3h7v7h-7z',

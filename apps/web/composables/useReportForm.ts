@@ -2,6 +2,7 @@ import type {
   Protocol,
   ProtocolContent,
   ReportData,
+  ReportCoding,
   ReportDetail,
   ReportIssue,
   ReportValue,
@@ -20,6 +21,7 @@ export function useReportForm(caseId: string, options: UseReportFormOptions = {}
   const protocols = ref<Protocol[]>([]);
   const protocolId = ref('');
   const data = reactive<ReportData>({});
+  const coding = ref<ReportCoding>(emptyCoding());
   const issues = ref<ReportIssue[]>([]);
   const loading = ref(false);
   const saving = ref(false);
@@ -29,6 +31,13 @@ export function useReportForm(caseId: string, options: UseReportFormOptions = {}
 
   watch(
     data,
+    () => {
+      if (!hydrating) dirty.value = true;
+    },
+    { deep: true, flush: 'sync' },
+  );
+  watch(
+    coding,
     () => {
       if (!hydrating) dirty.value = true;
     },
@@ -64,6 +73,13 @@ export function useReportForm(caseId: string, options: UseReportFormOptions = {}
     dirty.value = false;
   }
 
+  function applyCoding(value: ReportCoding | null | undefined): void {
+    hydrating = true;
+    coding.value = value ? { ...value } : emptyCoding();
+    hydrating = false;
+    dirty.value = false;
+  }
+
   function fieldError(key: string): string | null {
     return issues.value.find((issue) => issue.fieldKey === key)?.message ?? null;
   }
@@ -84,7 +100,9 @@ export function useReportForm(caseId: string, options: UseReportFormOptions = {}
       report.value = existing && typeof existing === 'object' ? existing : null;
       if (report.value) {
         applyData(report.value.data);
+        applyCoding(report.value.coding);
       } else {
+        applyCoding(null);
         const query: Record<string, string | boolean> = { active: true };
         if (options.subspecialty) query.subspecialty = options.subspecialty;
         protocols.value = await api.get<Protocol[]>('/protocols', query);
@@ -114,6 +132,7 @@ export function useReportForm(caseId: string, options: UseReportFormOptions = {}
         protocolId: protocolId.value,
       });
       applyData(report.value.data);
+      applyCoding(report.value.coding);
       toast.success('Draft created', 'The synoptic report is ready to complete.');
       return true;
     } catch (caught) {
@@ -135,8 +154,12 @@ export function useReportForm(caseId: string, options: UseReportFormOptions = {}
     }
     saving.value = true;
     try {
-      report.value = await api.patch<ReportDetail>(`/reports/${report.value.id}`, { data });
+      report.value = await api.patch<ReportDetail>(`/reports/${report.value.id}`, {
+        data,
+        coding: coding.value,
+      });
       applyData(report.value.data);
+      applyCoding(report.value.coding);
       toast.success('Draft saved', 'Structured data and narrative are up to date.');
       return true;
     } catch (caught) {
@@ -164,6 +187,7 @@ export function useReportForm(caseId: string, options: UseReportFormOptions = {}
     try {
       report.value = await api.post<ReportDetail>(`/reports/${report.value.id}/sign-out`);
       applyData(report.value.data);
+      applyCoding(report.value.coding);
       toast.success(
         'Report signed out',
         'The report is locked. Any change now requires an amendment.',
@@ -188,8 +212,10 @@ export function useReportForm(caseId: string, options: UseReportFormOptions = {}
       report.value = await api.post<ReportDetail>(`/reports/${report.value.id}/amend`, {
         reason,
         data,
+        coding: coding.value,
       });
       applyData(report.value.data);
+      applyCoding(report.value.coding);
       toast.success('Amendment signed', 'A new immutable report version has been created.');
       return true;
     } catch (caught) {
@@ -219,6 +245,7 @@ export function useReportForm(caseId: string, options: UseReportFormOptions = {}
     protocols,
     protocolId,
     data,
+    coding,
     issues,
     loading,
     saving,
@@ -241,5 +268,16 @@ export function useReportForm(caseId: string, options: UseReportFormOptions = {}
     validate,
     fieldError,
     setField,
+  };
+}
+
+function emptyCoding(): ReportCoding {
+  return {
+    snomedCode: null,
+    snomedDisplay: null,
+    icdo3MorphologyCode: null,
+    icdo3MorphologyDisplay: null,
+    icdo3TopographyCode: null,
+    icdo3TopographyDisplay: null,
   };
 }

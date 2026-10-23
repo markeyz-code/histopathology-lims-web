@@ -41,9 +41,11 @@ const expected = computed(() => {
 const flashClass = computed(() =>
   scanner.flash.value === 'success'
     ? 'border-success'
-    : scanner.flash.value === 'error'
-      ? 'border-danger'
-      : 'border-transparent',
+    : scanner.flash.value === 'queued'
+      ? 'border-warning'
+      : scanner.flash.value === 'error'
+        ? 'border-danger'
+        : 'border-transparent',
 );
 
 const inputEl = ref<HTMLInputElement | null>(null);
@@ -71,6 +73,15 @@ function onKeydown(event: KeyboardEvent): void {
     clear();
   }
 }
+
+watch(
+  () => scanner.queue.pendingCount.value,
+  (count, previous) => {
+    if (previous > 0 && count === 0) {
+      scanner.offlineNotice.value = null;
+    }
+  },
+);
 
 onMounted(() => {
   nextTick(() => focusInput());
@@ -105,6 +116,7 @@ onMounted(() => {
         >
           {{ auth.displayName }} · {{ auth.role?.replace('_', ' ') }}
         </span>
+        <OfflineQueueBadge />
         <button
           type="button"
           class="flex h-8 w-8 items-center justify-center border border-rail-line text-rail-muted transition-colors hover:border-rail-ink/40 hover:text-rail-ink"
@@ -223,6 +235,26 @@ onMounted(() => {
           Esc clears the field. Invalid transitions are rejected with the allowed next state.
         </p>
       </form>
+
+      <div
+        v-if="scanner.offlineNotice.value"
+        class="mt-5 flex flex-wrap items-center justify-between gap-3 border border-warning/50 bg-warning/[0.08] p-4"
+        role="status"
+      >
+        <div>
+          <p class="font-mono text-[9px] uppercase tracking-[0.18em] text-warning">Saved offline</p>
+          <p class="mt-1 text-sm text-rail-ink">{{ scanner.offlineNotice.value }}</p>
+        </div>
+        <button
+          type="button"
+          class="btn btn-secondary border-rail-line bg-transparent text-rail-ink"
+          :disabled="scanner.queue.syncing.value || scanner.queue.pendingCount.value === 0"
+          @click="scanner.queue.flush()"
+        >
+          <AppIcon name="refresh" :size="12" />
+          Sync {{ scanner.queue.pendingCount.value }} queued
+        </button>
+      </div>
 
       <div aria-live="assertive" aria-atomic="true" class="mt-8">
         <div

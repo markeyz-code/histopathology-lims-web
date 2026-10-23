@@ -32,6 +32,8 @@ const sections: NavSection[] = [
       { to: '/cases', label: 'Cases', icon: 'cases', capability: 'cases' },
       { to: '/scan', label: 'Scan station', icon: 'scan', capability: 'scan' },
       { to: '/worklist', label: 'Worklist', icon: 'worklist', capability: 'worklist' },
+      { to: '/qa', label: 'QA review', icon: 'shield', capability: 'qa' },
+      { to: '/admin/billing', label: 'Billing', icon: 'billing', capability: 'billing' },
     ],
   },
   {
@@ -43,6 +45,9 @@ const sections: NavSection[] = [
     items: [
       { to: '/admin/users', label: 'Staff', icon: 'users', capability: 'admin' },
       { to: '/admin/protocols', label: 'Protocols', icon: 'protocols', capability: 'admin' },
+      { to: '/admin/inventory', label: 'Inventory', icon: 'beaker', capability: 'inventory' },
+      { to: '/admin/notifications', label: 'Message outbox', icon: 'send', capability: 'admin' },
+      { to: '/admin/integrations', label: 'Integrations', icon: 'external', capability: 'interop' },
       { to: '/admin/settings', label: 'Lab settings', icon: 'settings', capability: 'admin' },
       { to: '/admin/audit', label: 'Audit log', icon: 'audit', capability: 'audit' },
     ],
@@ -227,6 +232,7 @@ onBeforeUnmount(() => {
           </form>
 
           <div class="flex items-center gap-2">
+            <OfflineQueueBadge />
             <NuxtLink
               v-if="auth.can('accession')"
               to="/accession"
@@ -246,7 +252,7 @@ onBeforeUnmount(() => {
       <footer
         class="mx-auto flex w-full max-w-shell flex-col gap-1 border-t border-line px-4 py-4 font-mono text-[9px] uppercase tracking-[0.14em] text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
       >
-        <span>Histopathology LIMS · Phase 1</span>
+        <span>Histopathology LIMS · Phase 2/3</span>
         <span>{{ auth.lab?.name }} · {{ auth.lab?.code }}</span>
       </footer>
     </div>

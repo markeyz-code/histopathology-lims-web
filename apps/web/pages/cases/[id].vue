@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import type { Block, CaseDetail, Slide, Specimen, StainType, UserSummary } from '@lims/shared';
-import { PRIORITY_LABELS, STAIN_TYPES, STAIN_TYPE_LABELS } from '@lims/shared';
+import {
+  PRIORITY_LABELS,
+  REJECTION_REASON_CODES,
+  REJECTION_REASON_LABELS,
+  STAIN_TYPES,
+  STAIN_TYPE_LABELS,
+} from '@lims/shared';
 
 definePageMeta({ title: 'Case detail', capabilities: ['cases'] });
 
@@ -49,7 +55,16 @@ const cutSaving = ref(false);
 const rejectModal = ref(false);
 const rejectSpecimen = ref<Specimen | null>(null);
 const rejectReason = ref('');
+const rejectCode = ref('OTHER');
 const rejectSaving = ref(false);
+
+const wsiModal = ref(false);
+const wsiSlide = ref<Slide | null>(null);
+const wsiUrl = ref('');
+const wsiViewerUrl = ref('');
+const wsiScanner = ref('');
+const wsiMagnification = ref('');
+const wsiSaving = ref(false);
 
 const stainModal = ref(false);
 const stainBlock = ref<Block | null>(null);
@@ -164,6 +179,7 @@ async function submitCut(): Promise<void> {
 function openReject(specimen: Specimen): void {
   rejectSpecimen.value = specimen;
   rejectReason.value = '';
+  rejectCode.value = 'OTHER';
   rejectModal.value = true;
 }
 
@@ -175,7 +191,11 @@ async function submitReject(): Promise<void> {
   }
   rejectSaving.value = true;
   try {
-    await casesApi.rejectSpecimen(rejectSpecimen.value.id, rejectReason.value.trim());
+    await casesApi.rejectSpecimen(
+      rejectSpecimen.value.id,
+      rejectReason.value.trim(),
+      rejectCode.value,
+    );
     toast.success('Specimen rejected', 'The custody timeline has been updated.');
     rejectModal.value = false;
     await load(true);
@@ -183,6 +203,39 @@ async function submitReject(): Promise<void> {
     toast.error('Could not reject the specimen', apiErrorMessage(caught));
   } finally {
     rejectSaving.value = false;
+  }
+}
+
+function openWsi(slide: Slide): void {
+  wsiSlide.value = slide;
+  wsiUrl.value = slide.wsi?.url ?? '';
+  wsiViewerUrl.value = slide.wsi?.viewerUrl ?? '';
+  wsiScanner.value = slide.wsi?.scanner ?? '';
+  wsiMagnification.value = slide.wsi?.magnification ?? '';
+  wsiModal.value = true;
+}
+
+async function submitWsi(): Promise<void> {
+  if (!wsiSlide.value) return;
+  if (!/^https?:\/\//.test(wsiUrl.value.trim())) {
+    toast.error('Image URL required', 'Use an http(s) URL to the whole-slide image.');
+    return;
+  }
+  wsiSaving.value = true;
+  try {
+    await useApi().post(`/wsi/slides/${wsiSlide.value.id}/link`, {
+      url: wsiUrl.value.trim(),
+      viewerUrl: wsiViewerUrl.value.trim() || undefined,
+      scanner: wsiScanner.value.trim() || undefined,
+      magnification: wsiMagnification.value.trim() || undefined,
+    });
+    toast.success('WSI linked', 'The slide now opens in the whole-slide viewer.');
+    wsiModal.value = false;
+    await load(true);
+  } catch (caught) {
+    toast.error('Could not link the image', apiErrorMessage(caught));
+  } finally {
+    wsiSaving.value = false;
   }
 }
 
@@ -571,6 +624,23 @@ onMounted(async () => {
                           >
                             <AppIcon name="print" :size="11" /> Label
                           </button>
+                          <a
+                            v-if="slide.wsi?.viewerUrl"
+                            :href="slide.wsi.viewerUrl"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="btn btn-ghost btn-sm text-accent"
+                          >
+                            <AppIcon name="eye" :size="11" /> WSI
+                          </a>
+                          <button
+                            v-else
+                            type="button"
+                            class="btn btn-ghost btn-sm"
+                            @click="openWsi(slide)"
+                          >
+                            <AppIcon name="eye" :size="11" /> WSI
+                          </button>
                           <button
                             v-if="
                               canReport &&
@@ -891,7 +961,69 @@ onMounted(async () => {
       </template>
     </AppModal>
 
+    <AppModal
+      v-model="wsiModal"
+      title="Link whole-slide image"
+      :description="wsiSlide ? `Slide ${wsiSlide.label}` : ''"
+      :persistent="wsiSaving"
+    >
+      <div class="space-y-4">
+        <FormField
+          label="Image URL"
+          for-id="wsi-url"
+          required
+          hint="Usually an .svs, .tiff or vendor viewer URL."
+        >
+          <input
+            id="wsi-url"
+            v-model="wsiUrl"
+            class="input font-mono text-xs"
+            placeholder="https://wsi.example.org/slides/SL-…"
+          />
+        </FormField>
+        <FormField
+          label="Viewer URL"
+          for-id="wsi-viewer"
+          hint="Optional; defaults to the image URL."
+        >
+          <input
+            id="wsi-viewer"
+            v-model="wsiViewerUrl"
+            class="input font-mono text-xs"
+            placeholder="https://viewer.example.org/slide/…"
+          />
+        </FormField>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <FormField label="Scanner" for-id="wsi-scanner"
+            ><input
+              id="wsi-scanner"
+              v-model="wsiScanner"
+              class="input"
+              placeholder="Leica Aperio GT450"
+          /></FormField>
+          <FormField label="Magnification" for-id="wsi-mag"
+            ><input id="wsi-mag" v-model="wsiMagnification" class="input" placeholder="40x"
+          /></FormField>
+        </div>
+      </div>
+      <template #footer>
+        <button type="button" class="btn btn-ghost" :disabled="wsiSaving" @click="wsiModal = false">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" :disabled="wsiSaving" @click="submitWsi">
+          <AppIcon name="eye" :size="13" /> Link image
+        </button>
+      </template>
+    </AppModal>
+
     <AppModal v-model="rejectModal" title="Reject specimen" :persistent="rejectSaving">
+      <FormField label="Reason code" for-id="reject-code" required>
+        <select id="reject-code" v-model="rejectCode" class="select">
+          <option v-for="code in REJECTION_REASON_CODES" :key="code" :value="code">
+            {{ REJECTION_REASON_LABELS[code] }}
+          </option>
+        </select>
+      </FormField>
       <FormField
         label="Reason"
         for-id="reject-reason"

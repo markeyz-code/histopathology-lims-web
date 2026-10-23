@@ -22,6 +22,12 @@ function statusOf(error: unknown): number | undefined {
   return candidate?.statusCode ?? candidate?.response?.status ?? candidate?.data?.statusCode;
 }
 
+export function isNetworkError(error: unknown): boolean {
+  if (statusOf(error) !== undefined) return false;
+  const message = error instanceof Error ? error.message : String(error);
+  return error instanceof TypeError || /fetch|network|connection|offline/i.test(message);
+}
+
 export function apiErrorMessage(error: unknown): string {
   const candidate = error as {
     data?: ApiErrorBody;

@@ -25,6 +25,7 @@ const createError = ref<string | null>(null);
 const createForm = reactive({
   name: '',
   email: '',
+  phone: '',
   role: 'TECHNOLOGIST' as Role,
   password: '',
   subspecialties: '',
@@ -71,6 +72,7 @@ function openCreate(): void {
   createError.value = null;
   createForm.name = '';
   createForm.email = '';
+  createForm.phone = '';
   createForm.role = 'TECHNOLOGIST';
   createForm.password = '';
   createForm.subspecialties = '';
@@ -82,6 +84,7 @@ async function submitCreate(): Promise<void> {
   const parsed = createUserSchema.safeParse({
     name: createForm.name,
     email: createForm.email,
+    phone: createForm.phone,
     role: createForm.role,
     password: createForm.password,
     subspecialties: createForm.subspecialties

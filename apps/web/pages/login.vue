@@ -162,6 +162,14 @@ async function submit(): Promise<void> {
       No public sign-up. Accounts are issued and revoked by the laboratory administrator.
     </p>
 
+    <NuxtLink
+      to="/portal/login"
+      class="mt-3 flex items-center justify-center gap-2 border border-line bg-surface px-3 py-2.5 font-mono text-[9px] uppercase tracking-caps text-muted transition-colors hover:border-accent hover:text-ink"
+    >
+      <AppIcon name="stethoscope" :size="13" />
+      Referring clinician? Use a one-time link
+    </NuxtLink>
+
     <details v-if="isLocalDemo" class="mt-7 border border-line bg-surface">
       <summary
         class="cursor-pointer px-4 py-3 font-mono text-2xs uppercase tracking-caps text-muted marker:text-accent"

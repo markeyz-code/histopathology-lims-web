@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import type { CaseDetail } from '@lims/shared';
+import type { CaseDetail, ReportCoding, ReportDetail, UserSummary } from '@lims/shared';
 
 definePageMeta({ title: 'Synoptic report', roles: ['PATHOLOGIST', 'SUPER_ADMIN'] });
 useHead({ title: 'Synoptic report' });
 
 const route = useRoute();
 const toast = useToast();
+const api = useApi();
+const auth = useAuthStore();
 const casesApi = useCases();
 const { dateTime, relative, name } = useFormat();
 
@@ -22,6 +24,14 @@ const amendmentMode = ref(false);
 const signatureConfirmed = ref(false);
 const amendReason = ref('');
 const starting = ref(false);
+const releaseOpen = ref(false);
+const releaseNote = ref('');
+const releasing = ref(false);
+const opinionOpen = ref(false);
+const opinionReason = ref('');
+const opinionReviewer = ref('');
+const pathologists = ref<UserSummary[]>([]);
+const opinionSaving = ref(false);
 
 const report = computed(() => form.report.value);
 const content = computed(() => form.content.value);
@@ -38,6 +48,13 @@ const progress = computed(() =>
     ? 100
     : Math.round((requiredCompleted.value / requiredTotal.value) * 100),
 );
+const codingModel = computed<ReportCoding>({
+  get: () => form.coding.value,
+  set: (value) => {
+    form.coding.value = value;
+  },
+});
+const isReleased = computed(() => Boolean(form.report.value?.releasedAt));
 
 async function init(): Promise<void> {
   caseLoading.value = true;
@@ -45,6 +62,7 @@ async function init(): Promise<void> {
   try {
     caseDetail.value = await casesApi.get(caseId);
     await form.load();
+    pathologists.value = await api.get<UserSummary[]>('/users/pathologists').catch(() => []);
     if (!form.report.value && form.protocols.value.length > 0) {
       const match = form.protocols.value.find(
         (protocol) => protocol.subspecialty === caseDetail.value?.subspecialty,
@@ -66,6 +84,50 @@ async function startReport(): Promise<void> {
     await casesApi.get(caseId).then((detail) => {
       caseDetail.value = detail;
     });
+  }
+}
+
+async function releaseReport(): Promise<void> {
+  if (!form.report.value) return;
+  releasing.value = true;
+  try {
+    const released = await api.post<ReportDetail>(`/reports/${form.report.value.id}/release`, {
+      note: releaseNote.value || undefined,
+    });
+    form.report.value = released;
+    releaseOpen.value = false;
+    releaseNote.value = '';
+    toast.success('Report released', 'The referrer can now see it in the portal.');
+  } catch (caught) {
+    toast.error('Could not release report', apiErrorMessage(caught));
+  } finally {
+    releasing.value = false;
+  }
+}
+
+async function requestSecondOpinion(): Promise<void> {
+  if (!form.report.value) return;
+  if (opinionReason.value.trim().length < 5) {
+    toast.error('Reason required', 'Explain why a second opinion is needed.');
+    return;
+  }
+  opinionSaving.value = true;
+  try {
+    await api.post('/qa/reviews', {
+      caseId,
+      reportId: form.report.value.id,
+      type: 'SECOND_OPINION',
+      reviewerId: opinionReviewer.value || undefined,
+      reason: opinionReason.value.trim(),
+    });
+    opinionOpen.value = false;
+    opinionReason.value = '';
+    opinionReviewer.value = '';
+    toast.success('Second opinion requested', 'The reviewer will find it in QA review.');
+  } catch (caught) {
+    toast.error('Could not request second opinion', apiErrorMessage(caught));
+  } finally {
+    opinionSaving.value = false;
   }
 }
 
@@ -183,6 +245,24 @@ onBeforeRouteLeave(() => {
           <AppIcon name="edit" :size="13" /> Amend report
         </button>
         <button
+          v-if="report && (report.status === 'SIGNED_OUT' || report.status === 'AMENDED')"
+          type="button"
+          class="btn btn-secondary"
+          @click="opinionOpen = true"
+        >
+          <AppIcon name="shield" :size="13" /> Second opinion
+        </button>
+        <button
+          v-if="
+            report && (report.status === 'SIGNED_OUT' || report.status === 'AMENDED') && !isReleased
+          "
+          type="button"
+          class="btn btn-primary"
+          @click="releaseOpen = true"
+        >
+          <AppIcon name="send" :size="13" /> Release to referrer
+        </button>
+        <button
           v-if="editableDraft"
           type="button"
           class="btn btn-primary"
@@ -206,6 +286,9 @@ onBeforeRouteLeave(() => {
           >Version {{ report.version }} · protocol v{{ report.protocol.version }}</span
         >
         <span v-if="report?.signedOutBy">Signed by {{ report.signedOutBy.name }}</span>
+        <span v-if="report?.releasedAt" class="text-success"
+          >Released {{ dateTime(report.releasedAt) }}</span
+        >
       </template>
     </PageHeader>
 
@@ -362,6 +445,8 @@ onBeforeRouteLeave(() => {
                 />
               </div>
             </section>
+
+            <ReportCodingCard v-model="codingModel" :disabled="formDisabled" />
 
             <div
               v-if="editableDraft"
@@ -535,6 +620,90 @@ onBeforeRouteLeave(() => {
         message="The case report exists but the protocol snapshot could not be loaded."
       />
     </template>
+
+    <AppModal
+      v-model="releaseOpen"
+      title="Release to referrer"
+      description="The report becomes visible in the referral portal and the referrer is notified."
+      :persistent="releasing"
+    >
+      <div class="space-y-4">
+        <FormField label="Release note (optional)" for-id="release-note">
+          <input
+            id="release-note"
+            v-model="releaseNote"
+            class="input"
+            placeholder="Seen at MDT; copy to clinician."
+          />
+        </FormField>
+        <p class="text-xs leading-relaxed text-muted">
+          Only a signed or amended report can be released. An amendment resets the release and must
+          be released again.
+        </p>
+      </div>
+      <template #footer>
+        <button
+          type="button"
+          class="btn btn-ghost"
+          :disabled="releasing"
+          @click="releaseOpen = false"
+        >
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" :disabled="releasing" @click="releaseReport">
+          <AppIcon name="send" :size="13" /> {{ releasing ? 'Releasing…' : 'Release report' }}
+        </button>
+      </template>
+    </AppModal>
+
+    <AppModal
+      v-model="opinionOpen"
+      title="Request a second opinion"
+      description="Creates a QA review linked to this signed report."
+      :persistent="opinionSaving"
+    >
+      <div class="space-y-4">
+        <FormField label="Reviewer" for-id="opinion-reviewer">
+          <select id="opinion-reviewer" v-model="opinionReviewer" class="select">
+            <option value="">Any available pathologist</option>
+            <option
+              v-for="person in pathologists.filter((item) => item.id !== auth.user?.id)"
+              :key="person.id"
+              :value="person.id"
+            >
+              {{ person.name }}
+            </option>
+          </select>
+        </FormField>
+        <FormField label="Why is this needed?" for-id="opinion-reason" required>
+          <textarea
+            id="opinion-reason"
+            v-model="opinionReason"
+            class="textarea min-h-[90px]"
+            placeholder="Diagnostic uncertainty, unusual morphology, clinician request…"
+          />
+        </FormField>
+      </div>
+      <template #footer>
+        <button
+          type="button"
+          class="btn btn-ghost"
+          :disabled="opinionSaving"
+          @click="opinionOpen = false"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          :disabled="opinionSaving"
+          @click="requestSecondOpinion"
+        >
+          <AppIcon name="shield" :size="13" />
+          {{ opinionSaving ? 'Requesting…' : 'Request review' }}
+        </button>
+      </template>
+    </AppModal>
 
     <AppModal
       v-model="signOutOpen"

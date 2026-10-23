@@ -1,4 +1,5 @@
 import type { ScanResponse, Station } from '@lims/shared';
+import { isNetworkError } from './useApi';
 
 export interface ScanHistoryEntry {
   id: number;
@@ -20,7 +21,9 @@ export function useScanner() {
   const busy = ref(false);
   const lastResult = ref<ScanResponse | null>(null);
   const lastError = ref<string | null>(null);
-  const flash = ref<'success' | 'error' | null>(null);
+  const flash = ref<'success' | 'error' | 'queued' | null>(null);
+  const offlineNotice = ref<string | null>(null);
+  const queue = useOfflineQueue();
   const history = ref<ScanHistoryEntry[]>([]);
   const muted = ref(false);
 
@@ -73,7 +76,7 @@ export function useScanner() {
     tone(130, 0.25, 'square', 0.17, 0.11);
   }
 
-  function setFlash(kind: 'success' | 'error'): void {
+  function setFlash(kind: 'success' | 'error' | 'queued'): void {
     flash.value = kind;
     if (flashTimer) clearTimeout(flashTimer);
     flashTimer = setTimeout(() => {
@@ -104,6 +107,7 @@ export function useScanner() {
     lastScanAt = now;
     busy.value = true;
     lastError.value = null;
+    offlineNotice.value = null;
     try {
       const result = await api.post<ScanResponse>('/custody/scan', {
         barcode: value,
@@ -111,6 +115,7 @@ export function useScanner() {
       });
       lastResult.value = result;
       lastError.value = null;
+      offlineNotice.value = null;
       barcode.value = '';
       successSound();
       setFlash('success');
@@ -125,9 +130,30 @@ export function useScanner() {
       });
       return result;
     } catch (error) {
+      if (isNetworkError(error)) {
+        const queued = await queue.enqueue('SCAN', { barcode: value, station });
+        if (queued) {
+          lastError.value = null;
+          lastResult.value = null;
+          offlineNotice.value = `${value} saved offline. It will sync automatically when the connection returns.`;
+          barcode.value = '';
+          setFlash('queued');
+          pushHistory({
+            ok: true,
+            barcode: value,
+            message: 'Saved offline — waiting to sync',
+            label: null,
+            accessionNumber: null,
+            at: queued.createdAt,
+            result: null,
+          });
+          return null;
+        }
+      }
       const message = apiErrorMessage(error);
       lastError.value = message;
       lastResult.value = null;
+      offlineNotice.value = null;
       errorSound();
       setFlash('error');
       pushHistory({
@@ -150,6 +176,7 @@ export function useScanner() {
     lastError.value = null;
     lastResult.value = null;
     flash.value = null;
+    offlineNotice.value = null;
   }
 
   return {
@@ -158,6 +185,8 @@ export function useScanner() {
     lastResult,
     lastError,
     flash,
+    offlineNotice,
+    queue,
     history,
     muted,
     scan,

@@ -7,7 +7,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const auth = useAuthStore();
   await auth.restore();
 
-  const publicPrefixes = ['/login', '/verify', '/offline'];
+  const publicPrefixes = ['/login', '/portal', '/verify', '/offline', '/payments'];
   const isPublic = publicPrefixes.some(
     (prefix) => to.path === prefix || to.path.startsWith(`${prefix}/`),
   );
@@ -22,7 +22,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (!auth.isAuthenticated) return;
 
-  if (auth.role === 'REFERRER' && !isPublic && to.path !== '/referrer' && to.path !== '/403') {
+  if (
+    auth.role === 'REFERRER' &&
+    !isPublic &&
+    to.path !== '/referrer' &&
+    !to.path.startsWith('/referrer/') &&
+    to.path !== '/403'
+  ) {
     return navigateTo('/referrer');
   }
 
