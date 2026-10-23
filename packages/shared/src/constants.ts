@@ -242,6 +242,10 @@ export const CAPABILITIES = [
   'admin',
   'audit',
   'referrer',
+  'inventory',
+  'qa',
+  'billing',
+  'interop',
 ] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
@@ -260,10 +264,14 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'labels',
     'admin',
     'audit',
+    'inventory',
+    'qa',
+    'billing',
+    'interop',
   ],
-  RECEPTIONIST: ['dashboard', 'accession', 'cases', 'locator', 'labels'],
+  RECEPTIONIST: ['dashboard', 'accession', 'cases', 'locator', 'labels', 'billing'],
   GROSSER: ['dashboard', 'cases', 'scan', 'grossing', 'locator', 'labels'],
-  TECHNOLOGIST: ['dashboard', 'cases', 'scan', 'lab_work', 'locator', 'labels'],
+  TECHNOLOGIST: ['dashboard', 'cases', 'scan', 'lab_work', 'locator', 'labels', 'inventory'],
   PATHOLOGIST: [
     'dashboard',
     'cases',
@@ -273,6 +281,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'worklist',
     'locator',
     'labels',
+    'qa',
   ],
   REFERRER: ['referrer'],
 };
@@ -290,6 +299,14 @@ export const AUDIT_ACTIONS = [
   'AMEND',
   'LOGIN',
   'LOGOUT',
+  'RELEASE',
+  'PAYMENT',
+  'WEBHOOK',
+  'SYNC',
+  'QA',
+  'EXPORT',
+  'NOTIFY',
+  'IMPORT',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -310,3 +327,199 @@ export const DEFAULT_ACCESSION_FORMAT = '{PREFIX}-{YYYY}-{SEQ:6}';
 export const DEFAULT_ACCESSION_PREFIX = 'HP';
 export const MAX_BLOCK_COUNT = 30;
 export const MAX_SLIDE_COUNT = 20;
+
+// ─────────────────────────────────────────────────────────────
+// Phase 2 — notifications, referral access, inventory and QA
+// ─────────────────────────────────────────────────────────────
+
+export const NOTIFICATION_CHANNELS = ['IN_APP', 'EMAIL', 'SMS', 'WHATSAPP'] as const;
+export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
+
+export const NOTIFICATION_STATUSES = ['QUEUED', 'SENDING', 'SENT', 'FAILED', 'SKIPPED'] as const;
+export type NotificationStatus = (typeof NOTIFICATION_STATUSES)[number];
+
+export const PORTAL_TOKEN_TYPES = ['MAGIC_LINK', 'OTP'] as const;
+export type PortalTokenType = (typeof PORTAL_TOKEN_TYPES)[number];
+
+export const REFERRAL_STATUSES = [
+  'RECEIVED',
+  'IN_PROGRESS',
+  'READY',
+  'RELEASED',
+  'AMENDED',
+] as const;
+export type ReferralStatus = (typeof REFERRAL_STATUSES)[number];
+
+export const REAGENT_CATEGORIES = ['REAGENT', 'ANTIBODY', 'CONSUMABLE'] as const;
+export type ReagentCategory = (typeof REAGENT_CATEGORIES)[number];
+
+export const REAGENT_CATEGORY_LABELS: Record<ReagentCategory, string> = {
+  REAGENT: 'Reagent',
+  ANTIBODY: 'Antibody',
+  CONSUMABLE: 'Consumable',
+};
+
+export const REAGENT_LOT_STATUSES = [
+  'QUARANTINED',
+  'ACTIVE',
+  'EXPIRED',
+  'DEPLETED',
+  'REJECTED',
+] as const;
+export type ReagentLotStatus = (typeof REAGENT_LOT_STATUSES)[number];
+
+export const REAGENT_LOT_STATUS_LABELS: Record<ReagentLotStatus, string> = {
+  QUARANTINED: 'Quarantined',
+  ACTIVE: 'Active',
+  EXPIRED: 'Expired',
+  DEPLETED: 'Depleted',
+  REJECTED: 'Rejected',
+};
+
+export const LOT_VALIDATION_STATUSES = ['PENDING', 'VALIDATED', 'FAILED'] as const;
+export type LotValidationStatus = (typeof LOT_VALIDATION_STATUSES)[number];
+
+export const STAIN_RUN_STATUSES = ['PLANNED', 'RUNNING', 'COMPLETED', 'FAILED', 'QC_HOLD'] as const;
+export type StainRunStatus = (typeof STAIN_RUN_STATUSES)[number];
+
+export const STAIN_QC_RESULTS = ['PENDING', 'PASS', 'FAIL'] as const;
+export type StainQcResult = (typeof STAIN_QC_RESULTS)[number];
+
+export const REJECTION_REASON_CODES = [
+  'MISLABELLED',
+  'WRONG_CONTAINER',
+  'FIXATION_DELAY',
+  'INSUFFICIENT_TISSUE',
+  'CONTAMINATION',
+  'BROKEN_SLIDE',
+  'LOST_IN_PROCESSING',
+  'UNREPRESENTATIVE',
+  'OTHER',
+] as const;
+export type RejectionReasonCode = (typeof REJECTION_REASON_CODES)[number];
+
+export const REJECTION_REASON_LABELS: Record<RejectionReasonCode, string> = {
+  MISLABELLED: 'Mislabelled or unidentified',
+  WRONG_CONTAINER: 'Wrong container or fixative',
+  FIXATION_DELAY: 'Fixation delay',
+  INSUFFICIENT_TISSUE: 'Insufficient tissue',
+  CONTAMINATION: 'Contamination',
+  BROKEN_SLIDE: 'Broken slide',
+  LOST_IN_PROCESSING: 'Lost in processing',
+  UNREPRESENTATIVE: 'Unrepresentative sample',
+  OTHER: 'Other (explain)',
+};
+
+export const QA_REVIEW_TYPES = ['PEER_REVIEW', 'SECOND_OPINION', 'DISCREPANCY'] as const;
+export type QaReviewType = (typeof QA_REVIEW_TYPES)[number];
+
+export const QA_REVIEW_STATUSES = [
+  'PENDING',
+  'ASSIGNED',
+  'IN_REVIEW',
+  'AGREED',
+  'DISCREPANT',
+  'CLOSED',
+  'CANCELLED',
+] as const;
+export type QaReviewStatus = (typeof QA_REVIEW_STATUSES)[number];
+
+export const QA_DISCREPANCY_CODES = [
+  'NONE',
+  'MAJOR_DIAGNOSTIC',
+  'MINOR_DIAGNOSTIC',
+  'GRADING',
+  'STAGING',
+  'BIOMARKER',
+  'MARGIN',
+  'LYMPH_NODE',
+  'TRANSCRIPTION',
+  'OTHER',
+] as const;
+export type QaDiscrepancyCode = (typeof QA_DISCREPANCY_CODES)[number];
+
+export const QA_DISCREPANCY_LABELS: Record<QaDiscrepancyCode, string> = {
+  NONE: 'No discrepancy',
+  MAJOR_DIAGNOSTIC: 'Major diagnostic disagreement',
+  MINOR_DIAGNOSTIC: 'Minor diagnostic disagreement',
+  GRADING: 'Grade disagreement',
+  STAGING: 'Stage disagreement',
+  BIOMARKER: 'Biomarker / IHC disagreement',
+  MARGIN: 'Margin disagreement',
+  LYMPH_NODE: 'Lymph node count disagreement',
+  TRANSCRIPTION: 'Transcription error',
+  OTHER: 'Other',
+};
+
+export const QA_SEVERITIES = ['MINOR', 'MAJOR', 'CRITICAL'] as const;
+export type QaSeverity = (typeof QA_SEVERITIES)[number];
+
+export const DEFAULT_QA_SAMPLING_PERCENT = 10;
+
+// ─────────────────────────────────────────────────────────────
+// Phase 3 — coding, imaging, payments, sync and interoperability
+// ─────────────────────────────────────────────────────────────
+
+export const CODING_SYSTEMS = ['SNOMED_CT', 'ICD_O_3_MORPHOLOGY', 'ICD_O_3_TOPOGRAPHY'] as const;
+export type CodingSystem = (typeof CODING_SYSTEMS)[number];
+
+export const CODING_SYSTEM_LABELS: Record<CodingSystem, string> = {
+  SNOMED_CT: 'SNOMED CT',
+  ICD_O_3_MORPHOLOGY: 'ICD-O-3 morphology',
+  ICD_O_3_TOPOGRAPHY: 'ICD-O-3 topography',
+};
+
+export const WSI_STATUSES = ['LINKED', 'PROCESSING', 'FAILED'] as const;
+export type WsiStatus = (typeof WSI_STATUSES)[number];
+
+export const PAYER_TYPES = ['SELF', 'HMO', 'CORPORATE', 'INSURANCE', 'WAIVER'] as const;
+export type PayerType = (typeof PAYER_TYPES)[number];
+
+export const PAYER_TYPE_LABELS: Record<PayerType, string> = {
+  SELF: 'Self-pay',
+  HMO: 'HMO',
+  CORPORATE: 'Corporate',
+  INSURANCE: 'Insurance',
+  WAIVER: 'Waiver',
+};
+
+export const INVOICE_STATUSES = [
+  'DRAFT',
+  'ISSUED',
+  'PARTIALLY_PAID',
+  'PAID',
+  'OVERDUE',
+  'VOID',
+] as const;
+export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
+
+export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
+  DRAFT: 'Draft',
+  ISSUED: 'Issued',
+  PARTIALLY_PAID: 'Partially paid',
+  PAID: 'Paid',
+  OVERDUE: 'Overdue',
+  VOID: 'Void',
+};
+
+export const PAYMENT_PROVIDERS = ['PAYSTACK', 'FLUTTERWAVE', 'CASH', 'TRANSFER', 'HMO'] as const;
+export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number];
+
+export const PAYMENT_STATUSES = ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED'] as const;
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+export const PAYMENT_MODES = ['MOCK', 'LIVE'] as const;
+export type PaymentMode = (typeof PAYMENT_MODES)[number];
+
+export const CLAIM_STATUSES = [
+  'DRAFT',
+  'READY',
+  'SUBMITTED',
+  'ACCEPTED',
+  'REJECTED',
+  'PAID',
+] as const;
+export type ClaimStatus = (typeof CLAIM_STATUSES)[number];
+
+export const SYNC_MUTATION_TYPES = ['SCAN', 'REJECT', 'RECUT'] as const;
+export type SyncMutationType = (typeof SYNC_MUTATION_TYPES)[number];

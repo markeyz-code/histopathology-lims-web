@@ -28,6 +28,15 @@ export interface SlideEntity {
   recutOfSlideId: Types.ObjectId | null;
   requestReason: string | null;
   notes: string | null;
+  stainRunId: Types.ObjectId | null;
+  wsiStatus: string | null;
+  wsiUrl: string | null;
+  wsiViewerUrl: string | null;
+  wsiScanner: string | null;
+  wsiMagnification: string | null;
+  wsiAddedAt: Date | null;
+  wsiAddedBy: Types.ObjectId | null;
+  wsiMetadata: Record<string, unknown>;
   createdBy: Types.ObjectId | null;
   lastEventAt: Date | null;
   createdAt: Date;
@@ -50,6 +59,15 @@ export const SlideSchema = new Schema<SlideEntity>(
     recutOfSlideId: { type: Schema.Types.ObjectId, ref: 'Slide', default: null },
     requestReason: { type: String, default: null },
     notes: { type: String, default: null },
+    stainRunId: { type: Schema.Types.ObjectId, ref: 'StainRun', default: null },
+    wsiStatus: { type: String, enum: ['LINKED', 'PROCESSING', 'FAILED'], default: null },
+    wsiUrl: { type: String, default: null },
+    wsiViewerUrl: { type: String, default: null },
+    wsiScanner: { type: String, default: null },
+    wsiMagnification: { type: String, default: null },
+    wsiAddedAt: { type: Date, default: null },
+    wsiAddedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    wsiMetadata: { type: Schema.Types.Mixed, default: {} },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     lastEventAt: { type: Date, default: null },
   },
@@ -60,3 +78,4 @@ SlideSchema.plugin(tenantPlugin);
 SlideSchema.index({ labId: 1, barcode: 1 }, { unique: true });
 SlideSchema.index({ labId: 1, caseId: 1, blockId: 1, slideNumber: 1 });
 SlideSchema.index({ labId: 1, status: 1 });
+SlideSchema.index({ labId: 1, stainRunId: 1 });

@@ -91,6 +91,7 @@ export class UsersService {
         email,
         passwordHash,
         role: dto.role,
+        phone: dto.phone?.trim() || null,
         subspecialties: dto.subspecialties ?? [],
       });
       await user.save({ session });
@@ -132,6 +133,7 @@ export class UsersService {
       if (dto.name !== undefined) user.name = dto.name.trim();
       if (dto.role !== undefined) user.role = dto.role;
       if (dto.active !== undefined) user.active = dto.active;
+      if (dto.phone !== undefined) user.phone = dto.phone.trim() || null;
       if (dto.subspecialties !== undefined) user.subspecialties = dto.subspecialties;
       if (dto.active === false) user.refreshTokenHash = null;
       await user.save({ session });

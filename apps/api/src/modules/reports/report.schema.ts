@@ -33,6 +33,18 @@ export interface ReportEntity {
   amendedAt: Date | null;
   amendmentReason: string | null;
   verificationCode: string | null;
+  coding: {
+    snomedCode: string | null;
+    snomedDisplay: string | null;
+    icdo3MorphologyCode: string | null;
+    icdo3MorphologyDisplay: string | null;
+    icdo3TopographyCode: string | null;
+    icdo3TopographyDisplay: string | null;
+  };
+  releasedAt: Date | null;
+  releasedBy: Types.ObjectId | null;
+  releaseNote: string | null;
+  secondOpinionStatus: string | null;
   pdfPath: string | null;
   pdfGeneratedAt: Date | null;
   createdBy: Types.ObjectId | null;
@@ -57,6 +69,18 @@ export const ReportSchema = new Schema<ReportEntity>(
     amendedAt: { type: Date, default: null },
     amendmentReason: { type: String, default: null },
     verificationCode: { type: String, default: null },
+    coding: {
+      snomedCode: { type: String, default: null },
+      snomedDisplay: { type: String, default: null },
+      icdo3MorphologyCode: { type: String, default: null },
+      icdo3MorphologyDisplay: { type: String, default: null },
+      icdo3TopographyCode: { type: String, default: null },
+      icdo3TopographyDisplay: { type: String, default: null },
+    },
+    releasedAt: { type: Date, default: null },
+    releasedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    releaseNote: { type: String, default: null },
+    secondOpinionStatus: { type: String, default: null },
     pdfPath: { type: String, default: null },
     pdfGeneratedAt: { type: Date, default: null },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
@@ -71,3 +95,4 @@ ReportSchema.index(
   { unique: true, partialFilterExpression: { verificationCode: { $type: 'string' } } },
 );
 ReportSchema.index({ labId: 1, status: 1, signedOutAt: -1 });
+ReportSchema.index({ labId: 1, releasedAt: -1 });

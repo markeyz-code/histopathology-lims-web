@@ -9,11 +9,13 @@ import {
   type PatientSummary,
   type Protocol,
   type ProtocolContent,
+  type ReportCoding,
   type ReportDetail,
   type ReportSummary,
   type ReportVersion as ReportVersionDto,
   type Slide as SlideDto,
   type Specimen as SpecimenDto,
+  type WsiInfo,
   type User as UserDto,
   type UserSummary,
 } from '@lims/shared';
@@ -44,6 +46,7 @@ export function toUserSummary(user: UserEntity): UserSummary {
 export function toUser(user: UserEntity): UserDto {
   return {
     ...toUserSummary(user),
+    phone: user.phone ?? null,
     active: user.active,
     lastLoginAt: toIso(user.lastLoginAt),
     createdAt: toIso(user.createdAt) ?? new Date().toISOString(),
@@ -67,6 +70,8 @@ export function toLab(lab: LabEntity): LabDto {
     },
     tatWarningPercent: lab.tatWarningPercent ?? 80,
     timezone: lab.timezone ?? 'Africa/Lagos',
+    qaSamplingPercent: lab.qaSamplingPercent ?? 10,
+    currency: lab.currency ?? 'NGN',
     letterhead: {
       phone: lab.letterhead?.phone ?? null,
       email: lab.letterhead?.email ?? null,
@@ -133,6 +138,7 @@ export function toSpecimen(specimen: SpecimenEntity): SpecimenDto {
     status: specimen.status,
     currentStation: specimen.currentStation,
     rejectionReason: specimen.rejectionReason,
+    rejectionCode: (specimen.rejectionCode as SpecimenDto['rejectionCode']) ?? null,
     createdAt: toIso(specimen.createdAt) ?? new Date().toISOString(),
   };
 }
@@ -155,6 +161,8 @@ export function toBlock(block: BlockEntity): BlockDto {
   };
 }
 
+export { toSlide as ToSlide };
+
 export function toSlide(slide: SlideEntity): SlideDto {
   return {
     id: slide._id.toString(),
@@ -172,8 +180,24 @@ export function toSlide(slide: SlideEntity): SlideDto {
     recutOfSlideId: slide.recutOfSlideId ? slide.recutOfSlideId.toString() : null,
     requestReason: slide.requestReason,
     notes: slide.notes,
+    stainRunId: slide.stainRunId ? slide.stainRunId.toString() : null,
+    wsi: toWsiInfo(slide),
     lastEventAt: toIso(slide.lastEventAt),
     createdAt: toIso(slide.createdAt) ?? new Date().toISOString(),
+  };
+}
+
+export function toWsiInfo(slide: SlideEntity): WsiInfo | null {
+  if (!slide.wsiStatus) return null;
+  return {
+    status: slide.wsiStatus as WsiInfo['status'],
+    url: slide.wsiUrl ?? null,
+    viewerUrl: slide.wsiViewerUrl ?? null,
+    scanner: slide.wsiScanner ?? null,
+    magnification: slide.wsiMagnification ?? null,
+    addedAt: toIso(slide.wsiAddedAt),
+    addedBy: slide.wsiAddedBy ? slide.wsiAddedBy.toString() : null,
+    metadata: (slide.wsiMetadata ?? {}) as Record<string, unknown>,
   };
 }
 
@@ -218,6 +242,7 @@ export function toReportSummary(report: ReportEntity): ReportSummary {
     version: report.version,
     signedOutAt: toIso(report.signedOutAt),
     amendedAt: toIso(report.amendedAt),
+    releasedAt: toIso(report.releasedAt),
   };
 }
 
@@ -241,6 +266,7 @@ export function toReportDetail(
   report: ReportEntity,
   signedOutBy: UserEntity | null,
   versions: ReportVersionDto[],
+  releasedBy: UserEntity | null = null,
 ): ReportDetail {
   const snapshot = report.protocolSnapshot;
   return {
@@ -267,6 +293,16 @@ export function toReportDetail(
     amendedAt: toIso(report.amendedAt),
     amendmentReason: report.amendmentReason,
     verificationCode: report.verificationCode,
+    coding: (report.coding ?? {
+      snomedCode: null,
+      snomedDisplay: null,
+      icdo3MorphologyCode: null,
+      icdo3MorphologyDisplay: null,
+      icdo3TopographyCode: null,
+      icdo3TopographyDisplay: null,
+    }) as ReportCoding,
+    releasedAt: toIso(report.releasedAt),
+    releasedBy: releasedBy ? toUserSummary(releasedBy) : null,
     createdAt: toIso(report.createdAt) ?? new Date().toISOString(),
     updatedAt: toIso(report.updatedAt) ?? new Date().toISOString(),
     versions,

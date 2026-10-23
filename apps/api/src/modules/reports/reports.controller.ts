@@ -8,7 +8,12 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/auth.decorators';
 import { Roles } from '../../common/decorators/auth.decorators';
 import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe';
-import { AmendReportDto, CreateReportDto, UpdateReportDto } from './dto/report.dto';
+import {
+  AmendReportDto,
+  CreateReportDto,
+  ReleaseReportDto,
+  UpdateReportDto,
+} from './dto/report.dto';
 import { ReportsService } from './reports.service';
 
 const REPORT_READ_ROLES = [
@@ -85,6 +90,17 @@ export class ReportsController {
     @Body() dto: AmendReportDto,
   ): Promise<ReportDetail> {
     return this.reportsService.amend(id, dto, user);
+  }
+
+  @Post(':id/release')
+  @Roles('PATHOLOGIST', 'LAB_ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Release a signed report to the referrer portal' })
+  release(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ReleaseReportDto,
+  ): Promise<ReportDetail> {
+    return this.reportsService.release(id, dto, user);
   }
 
   @Post(':id/pdf')

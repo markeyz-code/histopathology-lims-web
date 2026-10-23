@@ -37,7 +37,7 @@ export class SpecimensService {
     return buildPaginated(specimens.map(toSpecimen), total, query.page, query.limit);
   }
 
-  async reject(id: string, reason: string): Promise<Specimen> {
+  async reject(id: string, reason: string, reasonCode = 'OTHER'): Promise<Specimen> {
     const actor = currentActor();
     const specimen = await withTransaction(this.connection, async (session) => {
       const current = await this.specimenModel.findById(id).session(session).exec();
@@ -51,6 +51,7 @@ export class SpecimensService {
       const before = toSpecimen(current);
       current.status = 'REJECTED';
       current.rejectionReason = reason;
+      current.rejectionCode = reasonCode;
       await current.save({ session });
 
       await this.custody.append(
@@ -81,7 +82,7 @@ export class SpecimensService {
           caseId: caseDoc._id.toString(),
           before,
           after: toSpecimen(current),
-          metadata: { reason },
+          metadata: { reason, reasonCode },
         },
         session,
       );

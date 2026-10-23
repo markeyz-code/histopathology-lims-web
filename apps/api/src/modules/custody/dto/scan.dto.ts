@@ -34,6 +34,12 @@ export class ScanDto {
   @MaxLength(1_000)
   reason?: string;
 
+  @ApiPropertyOptional({ example: 'MISLABELLED' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  reasonCode?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()

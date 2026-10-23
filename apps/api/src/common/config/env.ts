@@ -36,6 +36,38 @@ const envSchema = z
       .default('7d'),
     STORAGE_DIR: z.string().min(1).default('./storage'),
     SEED_RESET: boolFromEnv('false'),
+
+    // Phase 2 — referral portal and notification delivery
+    PORTAL_DEBUG: boolFromEnv('false'),
+    PORTAL_TOKEN_TTL_MINUTES: z.coerce.number().int().min(5).max(120).default(15),
+    NOTIFICATIONS_MODE: z.enum(['outbox', 'live']).default('outbox'),
+    EMAIL_PROVIDER: z.enum(['log', 'smtp']).default('log'),
+    SMTP_HOST: z.string().min(1).optional(),
+    SMTP_PORT: z.coerce.number().int().min(1).max(65_535).default(587),
+    SMTP_SECURE: boolFromEnv('false'),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
+    EMAIL_FROM: z.string().email().default('no-reply@histopathology.local'),
+    SMS_PROVIDER: z.enum(['log', 'termii', 'twilio']).default('log'),
+    TERMII_API_KEY: z.string().optional(),
+    TERMII_SENDER_ID: z.string().max(20).default('HISTOLIMS'),
+    TWILIO_ACCOUNT_SID: z.string().optional(),
+    TWILIO_AUTH_TOKEN: z.string().optional(),
+    TWILIO_FROM_NUMBER: z.string().optional(),
+    TWILIO_WHATSAPP_FROM: z.string().optional(),
+
+    // Phase 3 — interoperability
+    FHIR_ENABLED: boolFromEnv('true'),
+    HL7_ENABLED: boolFromEnv('false'),
+    HL7_MLLP_PORT: z.coerce.number().int().min(1).max(65_535).default(2575),
+    HL7_LAB_CODE: z.string().min(2).max(32).default('HISTO'),
+    HL7_ALLOWED_IPS: z.string().optional(),
+    WSI_WEBHOOK_SECRET: z.string().min(16).optional(),
+    PAYMENTS_MODE: z.enum(['mock', 'live']).default('mock'),
+    PAYSTACK_SECRET_KEY: z.string().optional(),
+    FLUTTERWAVE_SECRET_KEY: z.string().optional(),
+    FLUTTERWAVE_WEBHOOK_HASH: z.string().optional(),
+    DEFAULT_CURRENCY: z.string().length(3).default('NGN'),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === 'production') {
@@ -51,6 +83,26 @@ const envSchema = z
             message: `${key} must not use the development default in production.`,
           });
         }
+      }
+    }
+
+    if (value.PAYMENTS_MODE === 'live') {
+      if (!value.PAYSTACK_SECRET_KEY && !value.FLUTTERWAVE_SECRET_KEY) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['PAYMENTS_MODE'],
+          message: 'PAYMENTS_MODE=live requires PAYSTACK_SECRET_KEY or FLUTTERWAVE_SECRET_KEY.',
+        });
+      }
+    }
+
+    if (value.NOTIFICATIONS_MODE === 'live' && value.EMAIL_PROVIDER === 'smtp') {
+      if (!value.SMTP_HOST || !value.SMTP_USER || !value.SMTP_PASS) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['SMTP_HOST'],
+          message: 'SMTP delivery requires SMTP_HOST, SMTP_USER and SMTP_PASS.',
+        });
       }
     }
   });

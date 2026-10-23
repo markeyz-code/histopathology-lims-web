@@ -7,6 +7,8 @@ import { LabModelName, LabSchema } from '../labs/lab.schema';
 import { PatientModelName, PatientSchema } from '../patients/patient.schema';
 import { PdfModule } from '../pdf/pdf.module';
 import { ProtocolModelName, ProtocolSchema } from '../protocols/protocol.schema';
+import { QaModule } from '../qa/qa.module';
+import { TerminologyModule } from '../terminology/terminology.module';
 import { UserModelName, UserSchema } from '../users/user.schema';
 import { ReportAssemblerService } from './report-assembler.service';
 import { ReportVersionModelName, ReportVersionSchema } from './report-version.schema';
@@ -28,6 +30,8 @@ import { ReportsService } from './reports.service';
     CustodyModule,
     PdfModule,
     JobsModule,
+    QaModule,
+    TerminologyModule,
   ],
   controllers: [ReportsController],
   providers: [ReportsService, ReportAssemblerService],

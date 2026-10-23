@@ -182,6 +182,7 @@ export class ScanService {
           metadata: {
             barcode: updated.barcode,
             ...(input.reason ? { reason: input.reason } : {}),
+            ...(input.reasonCode ? { reasonCode: input.reasonCode } : {}),
           },
         },
         session,

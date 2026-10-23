@@ -34,6 +34,7 @@ export class ReportAssemblerService {
 
     const userIds = new Set<string>();
     if (report.signedOutBy) userIds.add(report.signedOutBy.toString());
+    if (report.releasedBy) userIds.add(report.releasedBy.toString());
     for (const version of versions) {
       if (version.createdBy) userIds.add(version.createdBy.toString());
     }
@@ -45,6 +46,7 @@ export class ReportAssemblerService {
         : [];
     const userMap = new Map(users.map((user) => [user._id.toString(), user]));
     const signer = report.signedOutBy ? (userMap.get(report.signedOutBy.toString()) ?? null) : null;
+    const releaser = report.releasedBy ? (userMap.get(report.releasedBy.toString()) ?? null) : null;
 
     const versionDtos = versions.map((version) =>
       toReportVersion(
@@ -53,6 +55,6 @@ export class ReportAssemblerService {
       ),
     );
 
-    return toReportDetail(report, signer, versionDtos);
+    return toReportDetail(report, signer, versionDtos, releaser);
   }
 }

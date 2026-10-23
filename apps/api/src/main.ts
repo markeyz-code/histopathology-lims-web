@@ -12,7 +12,10 @@ import { Logger, LoggerErrorInterceptor } from 'nestjs-pino';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
   const config = app.get(ConfigService);
   const logger = app.get(Logger);
   app.useLogger(logger);
@@ -35,7 +38,14 @@ async function bootstrap(): Promise<void> {
     origin: origins,
     credentials: false,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'x-request-id',
+      'idempotency-key',
+      'x-fhir-api-key',
+      'x-wsi-signature',
+    ],
     exposedHeaders: ['x-request-id', 'Content-Disposition'],
     maxAge: 86_400,
   });
@@ -84,6 +94,16 @@ async function bootstrap(): Promise<void> {
       .addTag('Laboratories')
       .addTag('Audit')
       .addTag('Maintenance')
+      .addTag('Referrer portal')
+      .addTag('Notifications')
+      .addTag('Inventory')
+      .addTag('Quality assurance')
+      .addTag('Billing')
+      .addTag('Terminology')
+      .addTag('Whole-slide imaging')
+      .addTag('FHIR R4')
+      .addTag('HL7 v2')
+      .addTag('Offline sync')
       .build();
     const document = SwaggerModule.createDocument(app, swaggerConfig, {
       deepScanRoutes: true,

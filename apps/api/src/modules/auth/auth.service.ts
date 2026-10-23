@@ -83,6 +83,26 @@ export class AuthService {
     });
   }
 
+  async portalSession(userId: string): Promise<AuthResponse> {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user || !user.active || user.role !== 'REFERRER') {
+      throw new UnauthorizedException('This referral account is not available.');
+    }
+    const lab = await this.labModel.findById(user.labId).exec();
+    if (!lab) throw new UnauthorizedException('Laboratory is no longer available.');
+    const tokens = await this.signTokens(user);
+    user.refreshTokenHash = hashToken(tokens.refreshToken);
+    user.lastLoginAt = new Date();
+    await user.save();
+    await this.audit.record({
+      action: 'LOGIN',
+      entityType: 'User',
+      entityId: user._id.toString(),
+      metadata: { method: 'referral-magic-link', labCode: lab.code },
+    });
+    return { ...tokens, user: toUser(user), lab: toLab(lab) };
+  }
+
   async refresh(refreshToken: string): Promise<AuthResponse> {
     let payload: RefreshTokenPayload;
     try {

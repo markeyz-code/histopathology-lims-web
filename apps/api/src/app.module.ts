@@ -6,6 +6,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { randomUUID } from 'node:crypto';
 import type { Request, Response } from 'express';
 import { validateEnv } from './common/config/env';
+import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -16,21 +17,31 @@ import {
 } from './common/middleware/request-context.middleware';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BillingModule } from './modules/billing/billing.module';
 import { BlocksModule } from './modules/blocks/blocks.module';
 import { CasesModule } from './modules/cases/cases.module';
 import { CustodyModule } from './modules/custody/custody.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { FhirModule } from './modules/fhir/fhir.module';
+import { Hl7Module } from './modules/hl7/hl7.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { LabelsModule } from './modules/labels/labels.module';
 import { LabsModule } from './modules/labs/labs.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PatientsModule } from './modules/patients/patients.module';
+import { PortalModule } from './modules/portal/portal.module';
 import { PdfModule } from './modules/pdf/pdf.module';
 import { ProtocolsModule } from './modules/protocols/protocols.module';
+import { QaModule } from './modules/qa/qa.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { SlidesModule } from './modules/slides/slides.module';
 import { SpecimensModule } from './modules/specimens/specimens.module';
+import { SyncModule } from './modules/sync/sync.module';
+import { TerminologyModule } from './modules/terminology/terminology.module';
 import { UsersModule } from './modules/users/users.module';
 import { WorklistModule } from './modules/worklist/worklist.module';
+import { WsiModule } from './modules/wsi/wsi.module';
 
 @Module({
   imports: [
@@ -103,22 +114,33 @@ import { WorklistModule } from './modules/worklist/worklist.module';
       }),
     }),
     AuditModule,
+    BillingModule,
+    IdempotencyModule,
     AuthModule,
     LabsModule,
     UsersModule,
     PatientsModule,
     CustodyModule,
     CasesModule,
+    FhirModule,
+    Hl7Module,
     SpecimensModule,
     BlocksModule,
     SlidesModule,
     ProtocolsModule,
+    QaModule,
+    SyncModule,
+    TerminologyModule,
+    WsiModule,
     PdfModule,
     JobsModule,
     ReportsModule,
     WorklistModule,
     DashboardModule,
     LabelsModule,
+    InventoryModule,
+    NotificationsModule,
+    PortalModule,
     HealthModule,
   ],
   providers: [

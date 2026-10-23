@@ -132,6 +132,19 @@ export const stainRequestSchema = z.object({
 export type StainRequestInput = z.infer<typeof stainRequestSchema>;
 
 export const rejectSpecimenSchema = z.object({
+  reasonCode: z
+    .enum([
+      'MISLABELLED',
+      'WRONG_CONTAINER',
+      'FIXATION_DELAY',
+      'INSUFFICIENT_TISSUE',
+      'CONTAMINATION',
+      'BROKEN_SLIDE',
+      'LOST_IN_PROCESSING',
+      'UNREPRESENTATIVE',
+      'OTHER',
+    ])
+    .default('OTHER'),
   reason: z.string().trim().min(5, 'Record a rejection reason.').max(1_000),
 });
 export type RejectSpecimenInput = z.infer<typeof rejectSpecimenSchema>;

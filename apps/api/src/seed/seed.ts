@@ -59,6 +59,7 @@ import {
   type NotificationEntity,
 } from '../modules/notifications/notification.schema';
 import { runWithSystemTenant } from '../common/context/tenant-context';
+import { seedPhase23 } from './phase23-seed';
 import { hashPassword } from '../common/utils/crypto';
 import {
   breastProtocol,
@@ -497,7 +498,7 @@ const referringClinicians = [
     name: 'Dr Bola Adeyemi',
     facility: "St Mary's Specialist Clinic, Lagos",
     phone: '+234 803 441 2201',
-    email: 'b.adeyemi@stmarys.ng',
+    email: 'referrer@clinic.ng',
   },
   {
     name: 'Dr Ifeanyi Okoro',
@@ -720,6 +721,8 @@ export async function seedDatabase(): Promise<void> {
     tatHours: { FROZEN: 1, URGENT: 24, ROUTINE: 72 },
     tatWarningPercent: 80,
     timezone: 'Africa/Lagos',
+    qaSamplingPercent: 15,
+    currency: 'NGN',
     letterhead: {
       phone: '+234 802 555 0198',
       email: 'reports@lagoscentralhisto.ng',
@@ -753,6 +756,7 @@ export async function seedDatabase(): Promise<void> {
       password: string;
       role: Role;
       subspecialties: string[];
+      phone?: string;
     }[] = [
       {
         key: 'super',
@@ -817,6 +821,7 @@ export async function seedDatabase(): Promise<void> {
         password: 'Referrer#2026',
         role: 'REFERRER',
         subspecialties: [],
+        phone: '+234 803 441 2201',
       },
     ];
 
@@ -828,6 +833,7 @@ export async function seedDatabase(): Promise<void> {
         email: definition.email,
         passwordHash: await hashFor(definition.password),
         role: definition.role,
+        phone: definition.phone ?? null,
         subspecialties: definition.subspecialties,
         active: true,
       });
@@ -917,6 +923,9 @@ export async function seedDatabase(): Promise<void> {
       else if (advanceToGross) caseStatus = 'IN_PROGRESS';
       else caseStatus = 'RECEIVED';
 
+      const clinician = isReported
+        ? referringClinicians[0]!
+        : referringClinicians[index % referringClinicians.length]!;
       const patient = await PatientModel.create({
         labId,
         mrn,
@@ -959,8 +968,8 @@ export async function seedDatabase(): Promise<void> {
         clinicalDiagnosis: `Suspected ${content.cancerType.toLowerCase()}.`,
         subspecialty,
         referringClinician: {
-          ...referringClinicians[index % referringClinicians.length]!,
-          referrerUserId: null,
+          ...clinician,
+          referrerUserId: clinician.email === users.referrer?.email ? users.referrer._id : null,
         },
         assignedPathologistId: assignedPathologist ? assignedPathologist._id : null,
         receivedAt,
@@ -1702,6 +1711,9 @@ export async function seedDatabase(): Promise<void> {
         });
       }
     }
+
+    await seedPhase23(connection, labId, users, year);
+    lab.accessionCounters.set(`invoice-${year}`, 9);
 
     for (const event of custodyEvents) {
       await CustodyModel.create(event);

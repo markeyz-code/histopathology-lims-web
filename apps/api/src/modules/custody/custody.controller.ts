@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { CustodyEvent, LocatorResult, ScanResponse } from '@lims/shared';
 import { Roles } from '../../common/decorators/auth.decorators';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe';
 import { ScanDto } from './dto/scan.dto';
+import { IdempotencyService } from '../../common/idempotency/idempotency.service';
 import { LocatorService } from './locator.service';
 import { ScanService } from './scan.service';
 
@@ -15,6 +16,7 @@ export class CustodyController {
   constructor(
     private readonly scanService: ScanService,
     private readonly locatorService: LocatorService,
+    private readonly idempotency: IdempotencyService,
   ) {}
 
   @Post('scan')
@@ -25,8 +27,18 @@ export class CustodyController {
     description:
       'The station determines the event. Invalid transitions return 409 with the allowed next states.',
   })
-  scan(@Body() dto: ScanDto): Promise<ScanResponse> {
-    return this.scanService.scan(dto);
+  async scan(
+    @Body() dto: ScanDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ): Promise<ScanResponse> {
+    if (!idempotencyKey) return this.scanService.scan(dto);
+    const result = await this.idempotency.run(
+      idempotencyKey,
+      this.idempotency.hash(dto),
+      'custody-scan',
+      () => this.scanService.scan(dto),
+    );
+    return result.value;
   }
 
   @Get('locator/:barcode')

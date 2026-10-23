@@ -39,6 +39,12 @@ export class CreateUserDto {
   @IsEnum(ROLES)
   role!: Role;
 
+  @ApiPropertyOptional({ example: '+234 803 000 0000' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  phone?: string;
+
   @ApiPropertyOptional({ type: [String], example: ['Breast', 'Gastrointestinal'] })
   @IsOptional()
   @IsArray()
@@ -65,6 +71,12 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  phone?: string;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()

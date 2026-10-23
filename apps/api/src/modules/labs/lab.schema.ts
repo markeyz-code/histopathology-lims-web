@@ -34,6 +34,8 @@ export interface LabEntity {
   tatHours: Record<Priority, number>;
   tatWarningPercent: number;
   timezone: string;
+  qaSamplingPercent: number;
+  currency: string;
   letterhead: LabLetterhead;
   active: boolean;
   createdAt: Date;
@@ -78,6 +80,8 @@ export const LabSchema = new Schema<LabEntity>(
     },
     tatWarningPercent: { type: Number, default: DEFAULT_TAT_WARNING_PERCENT, min: 50, max: 95 },
     timezone: { type: String, default: 'Africa/Lagos' },
+    qaSamplingPercent: { type: Number, default: 10, min: 0, max: 100 },
+    currency: { type: String, default: 'NGN', uppercase: true, maxlength: 3 },
     letterhead: { type: letterheadSchema, default: () => ({}) },
     active: { type: Boolean, default: true },
   },

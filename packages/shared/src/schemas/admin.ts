@@ -24,6 +24,7 @@ export const createUserSchema = z.object({
     .regex(/[A-Za-z]/, 'Include a letter.')
     .regex(/\d/, 'Include a number.'),
   role: z.enum(ROLES),
+  phone: optionalTrimmed(40),
   subspecialties: z.array(z.string().trim().max(80)).max(20).default([]),
 });
 export type CreateUserInput = z.infer<typeof createUserSchema>;
@@ -31,6 +32,7 @@ export type CreateUserInput = z.infer<typeof createUserSchema>;
 export const updateUserSchema = z.object({
   name: z.string().trim().min(2).max(150).optional(),
   role: z.enum(ROLES).optional(),
+  phone: optionalTrimmed(40),
   active: z.boolean().optional(),
   subspecialties: z.array(z.string().trim().max(80)).max(20).optional(),
 });
@@ -50,6 +52,7 @@ export const userListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   role: z.enum(ROLES).optional(),
+  phone: optionalTrimmed(40),
   active: z
     .enum(['true', 'false'])
     .optional()
@@ -103,6 +106,8 @@ export const updateLabSchema = z.object({
     .optional(),
   tatWarningPercent: z.coerce.number().int().min(50).max(95).optional(),
   timezone: z.string().trim().max(80).optional(),
+  qaSamplingPercent: z.coerce.number().int().min(0).max(100).optional(),
+  currency: z.string().trim().length(3).optional(),
   letterhead: letterheadSchema.optional(),
 });
 export type UpdateLabInput = z.infer<typeof updateLabSchema>;

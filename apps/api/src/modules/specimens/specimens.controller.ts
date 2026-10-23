@@ -26,6 +26,6 @@ export class SpecimensController {
     @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: RejectSpecimenDto,
   ): Promise<Specimen> {
-    return this.specimensService.reject(id, dto.reason);
+    return this.specimensService.reject(id, dto.reason, dto.reasonCode);
   }
 }

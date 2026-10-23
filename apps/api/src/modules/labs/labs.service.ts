@@ -86,6 +86,8 @@ export class LabsService {
       if (dto.accessionFormat !== undefined) lab.accessionFormat = dto.accessionFormat;
       if (dto.tatWarningPercent !== undefined) lab.tatWarningPercent = dto.tatWarningPercent;
       if (dto.timezone !== undefined) lab.timezone = dto.timezone;
+      if (dto.qaSamplingPercent !== undefined) lab.qaSamplingPercent = dto.qaSamplingPercent;
+      if (dto.currency !== undefined) lab.currency = dto.currency.toUpperCase();
       if (dto.tatHours) {
         lab.tatHours = {
           FROZEN: dto.tatHours.FROZEN ?? lab.tatHours.FROZEN,

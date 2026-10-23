@@ -1,14 +1,13 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import { Queue, Worker, type ConnectionOptions } from 'bullmq';
-import type { PdfJobResult, Role } from '@lims/shared';
+import type { PdfJobResult } from '@lims/shared';
 import { runWithTenant } from '../../common/context/tenant-context';
 import {
-  NotificationModelName,
-  type NotificationEntity,
-} from '../notifications/notification.schema';
+  NotificationService,
+  type NotificationPayload,
+} from '../notifications/notification.service';
+import { InventoryService } from '../inventory/inventory.service';
 import { PdfService } from '../pdf/pdf.service';
 import { TatCheckService } from './tat-check.service';
 
@@ -27,18 +26,6 @@ function redisConnection(url: string): ConnectionOptions {
   };
 }
 
-export interface NotificationPayload {
-  labId: string;
-  type: string;
-  title: string;
-  body: string;
-  caseId?: string | null;
-  entityType?: string | null;
-  entityId?: string | null;
-  role?: Role | null;
-  userId?: string | null;
-}
-
 @Injectable()
 export class JobsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(JobsService.name);
@@ -54,8 +41,8 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
     private readonly config: ConfigService,
     private readonly pdfService: PdfService,
     private readonly tatCheck: TatCheckService,
-    @InjectModel(NotificationModelName)
-    private readonly notificationModel: Model<NotificationEntity>,
+    private readonly notifications: NotificationService,
+    private readonly inventory: InventoryService,
   ) {
     this.enabled = config.get<boolean>('QUEUES_ENABLED') ?? true;
   }
@@ -92,7 +79,7 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       'lims-notifications',
       async (job) => {
         await runWithTenant({ labId: String(job.data.labId) }, () =>
-          this.createNotification(job.data as NotificationPayload),
+          this.notifications.send(job.data as NotificationPayload),
         );
       },
       { connection, concurrency: 4 },
@@ -104,6 +91,10 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
         if (job.name === 'tat-check') {
           const count = await this.tatCheck.runAllLabs();
           this.logger.log(`TAT breach check completed; ${count} cases flagged.`);
+        }
+        if (job.name === 'inventory-expiry') {
+          const count = await this.inventory.runExpiryChecks();
+          this.logger.log(`Inventory expiry check completed; ${count} lots expired.`);
         }
       },
       { connection, concurrency: 1 },
@@ -126,6 +117,16 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       )
       .catch((error: unknown) => {
         this.logger.error({ err: error }, 'Could not register the recurring TAT check.');
+      });
+
+    void this.maintenanceQueue
+      .upsertJobScheduler(
+        'inventory-expiry-daily',
+        { every: 24 * 60 * 60 * 1_000 },
+        { name: 'inventory-expiry', data: {} },
+      )
+      .catch((error: unknown) => {
+        this.logger.error({ err: error }, 'Could not register the inventory expiry check.');
       });
   }
 
@@ -166,7 +167,7 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
 
   async enqueueNotification(payload: NotificationPayload): Promise<void> {
     if (!this.enabled || !this.notificationsQueue) {
-      await runWithTenant({ labId: payload.labId }, () => this.createNotification(payload));
+      await runWithTenant({ labId: payload.labId }, () => this.notifications.send(payload));
       return;
     }
     try {
@@ -177,23 +178,7 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       });
     } catch (error) {
       this.logger.error({ err: error }, 'Notification queue unavailable; writing inline.');
-      await runWithTenant({ labId: payload.labId }, () => this.createNotification(payload));
+      await runWithTenant({ labId: payload.labId }, () => this.notifications.send(payload));
     }
-  }
-
-  private async createNotification(payload: NotificationPayload): Promise<void> {
-    const notification = new this.notificationModel({
-      type: payload.type,
-      title: payload.title,
-      body: payload.body,
-      caseId: payload.caseId ?? null,
-      entityType: payload.entityType ?? 'Case',
-      entityId: payload.entityId ?? null,
-      role: payload.role ?? null,
-      userId: payload.userId ?? null,
-      readAt: null,
-      metadata: {},
-    });
-    await notification.save();
   }
 }

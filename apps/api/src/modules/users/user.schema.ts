@@ -10,6 +10,7 @@ export interface UserEntity {
   labId: Types.ObjectId;
   name: string;
   email: string;
+  phone: string | null;
   passwordHash: string;
   role: Role;
   subspecialties: string[];
@@ -24,6 +25,7 @@ export const UserSchema = new Schema<UserEntity>(
   {
     name: { type: String, required: true, trim: true, maxlength: 150 },
     email: { type: String, required: true, lowercase: true, trim: true, maxlength: 160 },
+    phone: { type: String, default: null, maxlength: 40 },
     passwordHash: { type: String, required: true, select: false },
     role: { type: String, enum: ROLES, required: true },
     subspecialties: { type: [String], default: [] },

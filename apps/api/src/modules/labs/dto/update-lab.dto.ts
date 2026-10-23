@@ -147,6 +147,20 @@ export class UpdateLabDto {
   @MaxLength(80)
   timezone?: string;
 
+  @ApiPropertyOptional({ example: 15 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  qaSamplingPercent?: number;
+
+  @ApiPropertyOptional({ example: 'NGN' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Za-z]{3}$/)
+  currency?: string;
+
   @ApiPropertyOptional({ type: LetterheadDto })
   @IsOptional()
   @ValidateNested()

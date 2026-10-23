@@ -1,16 +1,33 @@
 import type {
   AuditAction,
   CaseStatus,
+  CodingSystem,
+  InvoiceStatus,
   Laterality,
+  LotValidationStatus,
+  PayerType,
+  PaymentProvider,
+  PaymentStatus,
+  ReagentCategory,
+  ReagentLotStatus,
+  RejectionReasonCode,
+  ReferralStatus,
   PhysicalEntityType,
   PhysicalState,
   PhysicalState as EntityState,
   Priority,
+  QaDiscrepancyCode,
+  QaReviewStatus,
+  QaReviewType,
+  QaSeverity,
   ReportStatus,
   Role,
   Sex,
+  StainQcResult,
+  StainRunStatus,
   StainType,
   Station,
+  SyncMutationType,
 } from './constants';
 import type { ProtocolContent, ReportData } from './protocol';
 import type { TatInfo } from './tat';
@@ -24,6 +41,7 @@ export interface UserSummary {
 }
 
 export interface User extends UserSummary {
+  phone: string | null;
   active: boolean;
   lastLoginAt: string | null;
   createdAt: string;
@@ -53,6 +71,8 @@ export interface Lab {
   tatWarningPercent: number;
   timezone: string;
   letterhead: Letterhead;
+  qaSamplingPercent: number;
+  currency: string;
   active: boolean;
   createdAt: string;
 }
@@ -114,6 +134,7 @@ export interface Specimen {
   status: EntityState;
   currentStation: Station | null;
   rejectionReason: string | null;
+  rejectionCode: RejectionReasonCode | null;
   createdAt: string;
 }
 
@@ -149,6 +170,8 @@ export interface Slide {
   recutOfSlideId: string | null;
   requestReason: string | null;
   notes: string | null;
+  stainRunId: string | null;
+  wsi: WsiInfo | null;
   lastEventAt: string | null;
   createdAt: string;
 }
@@ -170,12 +193,22 @@ export interface CustodyEvent {
   metadata: Record<string, unknown>;
 }
 
+export interface ReportCoding {
+  snomedCode: string | null;
+  snomedDisplay: string | null;
+  icdo3MorphologyCode: string | null;
+  icdo3MorphologyDisplay: string | null;
+  icdo3TopographyCode: string | null;
+  icdo3TopographyDisplay: string | null;
+}
+
 export interface ReportSummary {
   id: string;
   status: ReportStatus;
   version: number;
   signedOutAt: string | null;
   amendedAt: string | null;
+  releasedAt: string | null;
 }
 
 export interface ReportProtocolSnapshot {
@@ -215,6 +248,9 @@ export interface ReportDetail {
   amendedAt: string | null;
   amendmentReason: string | null;
   verificationCode: string | null;
+  coding: ReportCoding;
+  releasedAt: string | null;
+  releasedBy: UserSummary | null;
   createdAt: string;
   updatedAt: string;
   versions: ReportVersion[];
@@ -420,4 +456,242 @@ export interface PdfJobResult {
 export interface CaseAccessionResult {
   case: CaseDetail;
   message: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 2/3 DTOs
+// ─────────────────────────────────────────────────────────────
+
+export interface WsiInfo {
+  status: 'LINKED' | 'PROCESSING' | 'FAILED';
+  url: string | null;
+  viewerUrl: string | null;
+  scanner: string | null;
+  magnification: string | null;
+  addedAt: string | null;
+  addedBy: string | null;
+  metadata: Record<string, unknown>;
+}
+
+export interface NotificationRecord {
+  id: string;
+  channel: 'IN_APP' | 'EMAIL' | 'SMS' | 'WHATSAPP';
+  status: 'QUEUED' | 'SENDING' | 'SENT' | 'FAILED' | 'SKIPPED';
+  type: string;
+  title: string;
+  body: string;
+  recipient: string | null;
+  provider: string | null;
+  attempts: number;
+  lastError: string | null;
+  caseId: string | null;
+  entityType: string | null;
+  entityId: string | null;
+  readAt: string | null;
+  sentAt: string | null;
+  createdAt: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface PortalCaseSummary {
+  id: string;
+  accessionNumber: string;
+  status: CaseStatus;
+  referralStatus: ReferralStatus;
+  patientName: string;
+  patientMrn: string;
+  receivedAt: string;
+  reportedAt: string | null;
+  releasedAt: string | null;
+  priority: Priority;
+  reportAvailable: boolean;
+  downloadUrl: string | null;
+}
+
+export interface PortalCaseDetail extends PortalCaseSummary {
+  patient: PatientSummary;
+  referringClinician: ReferringClinician;
+  clinicalHistory: string;
+  clinicalDiagnosis: string | null;
+  report: ReportDetail | null;
+  timeline: CustodyEvent[];
+}
+
+export interface PortalRequestResult {
+  sent: boolean;
+  message: string;
+  debugCode?: string;
+  debugToken?: string;
+}
+
+export interface ReagentLot {
+  id: string;
+  name: string;
+  category: ReagentCategory;
+  vendor: string;
+  catalogNumber: string | null;
+  lotNumber: string;
+  storageLocation: string | null;
+  quantity: number;
+  initialQuantity: number;
+  unit: string;
+  receivedAt: string;
+  openedAt: string | null;
+  expiresAt: string;
+  status: ReagentLotStatus;
+  validationStatus: LotValidationStatus;
+  validatedAt: string | null;
+  validatedBy: UserSummary | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface StainRunLot {
+  lotId: string;
+  lotNumber: string;
+  name: string;
+  quantityUsed: number;
+}
+
+export interface StainRun {
+  id: string;
+  caseId: string;
+  accessionNumber: string;
+  slideLabel: string | null;
+  slideId: string | null;
+  blockId: string | null;
+  stainType: StainType;
+  stainName: string;
+  status: StainRunStatus;
+  qcResult: StainQcResult;
+  lots: StainRunLot[];
+  equipment: string | null;
+  operator: UserSummary | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface QaReview {
+  id: string;
+  caseId: string;
+  accessionNumber: string;
+  patientName: string;
+  reportId: string | null;
+  protocolTitle: string | null;
+  type: QaReviewType;
+  status: QaReviewStatus;
+  reason: string | null;
+  requestedBy: UserSummary | null;
+  reviewer: UserSummary | null;
+  dueAt: string | null;
+  originalDiagnosis: string | null;
+  reviewDiagnosis: string | null;
+  discrepancyCode: QaDiscrepancyCode | null;
+  severity: QaSeverity | null;
+  findings: string | null;
+  actionPlan: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export interface QaStats {
+  pending: number;
+  inReview: number;
+  agreed: number;
+  discrepant: number;
+  overdue: number;
+  samplingPercent: number;
+}
+
+export interface TerminologyCode {
+  id: string;
+  system: CodingSystem;
+  code: string;
+  display: string;
+  category: string | null;
+  synonyms: string[];
+  active: boolean;
+}
+
+export interface InvoiceItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  category: string;
+}
+
+export interface Invoice {
+  id: string;
+  number: string;
+  caseId: string;
+  accessionNumber: string;
+  patientName: string;
+  payerType: PayerType;
+  hmoName: string | null;
+  hmoCode: string | null;
+  authorizationNumber: string | null;
+  status: InvoiceStatus;
+  currency: string;
+  items: InvoiceItem[];
+  subtotal: number;
+  discount: number;
+  total: number;
+  amountPaid: number;
+  balance: number;
+  dueAt: string | null;
+  issuedAt: string | null;
+  paidAt: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface Payment {
+  id: string;
+  invoiceId: string;
+  provider: PaymentProvider;
+  status: PaymentStatus;
+  amount: number;
+  currency: string;
+  reference: string;
+  providerReference: string | null;
+  checkoutUrl: string | null;
+  paidAt: string | null;
+  createdAt: string;
+}
+
+export interface ClaimRow {
+  invoiceNumber: string;
+  accessionNumber: string;
+  patientName: string;
+  hmoName: string | null;
+  authorizationNumber: string | null;
+  serviceDate: string;
+  total: number;
+  amountPaid: number;
+  balance: number;
+  status: InvoiceStatus;
+}
+
+export interface SyncMutation {
+  id: string;
+  type: SyncMutationType;
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface SyncMutationResult {
+  id: string;
+  ok: boolean;
+  duplicate: boolean;
+  result: Record<string, unknown> | null;
+  error: string | null;
+}
+
+export interface SyncBatchResult {
+  results: SyncMutationResult[];
+  syncedAt: string;
 }

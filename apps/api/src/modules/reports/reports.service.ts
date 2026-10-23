@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Model, Types, type ClientSession, type Connection } from 'mongoose';
+import { ConfigService } from '@nestjs/config';
 import {
   canAmendReport,
   checkSignOut,
@@ -33,12 +34,20 @@ import { JobsService } from '../jobs/jobs.service';
 import { LabModelName, type LabEntity } from '../labs/lab.schema';
 import { PatientModelName, type PatientEntity } from '../patients/patient.schema';
 import { PdfService, type GeneratedPdf } from '../pdf/pdf.service';
+import { QaService } from '../qa/qa.service';
+import { TerminologyService } from '../terminology/terminology.service';
 import { ProtocolModelName, type ProtocolEntity } from '../protocols/protocol.schema';
 import { UserModelName, type UserEntity } from '../users/user.schema';
 import { ReportAssemblerService } from './report-assembler.service';
 import { ReportVersionModelName, type ReportVersionEntity } from './report-version.schema';
 import { ReportModelName, type ReportEntity } from './report.schema';
-import type { AmendReportDto, CreateReportDto, UpdateReportDto } from './dto/report.dto';
+import type {
+  AmendReportDto,
+  CodingDto,
+  CreateReportDto,
+  ReleaseReportDto,
+  UpdateReportDto,
+} from './dto/report.dto';
 
 @Injectable()
 export class ReportsService {
@@ -60,6 +69,9 @@ export class ReportsService {
     private readonly pdfService: PdfService,
     private readonly jobs: JobsService,
     private readonly audit: AuditService,
+    private readonly config: ConfigService,
+    private readonly qa: QaService,
+    private readonly terminology: TerminologyService,
   ) {}
 
   async getByCase(caseId: string): Promise<ReportDetail | null> {
@@ -182,6 +194,7 @@ export class ReportsService {
       };
       report.data = validation.data;
       report.narrative = narrative;
+      if (dto.coding) report.coding = await this.normalizeCoding(dto.coding, report.coding);
       report.requiredComplete = completeness.complete;
       report.missingRequired = completeness.missingRequired;
       report.pdfPath = null;
@@ -247,6 +260,9 @@ export class ReportsService {
       report.verificationCode = verificationCode;
       report.requiredComplete = true;
       report.missingRequired = [];
+      report.releasedAt = null;
+      report.releasedBy = null;
+      report.releaseNote = null;
       report.pdfPath = null;
       report.pdfGeneratedAt = null;
       await report.save({ session });
@@ -328,6 +344,7 @@ export class ReportsService {
 
       report.data = validation.data;
       report.narrative = generateNarrative(content, validation.data);
+      if (dto.coding) report.coding = await this.normalizeCoding(dto.coding, report.coding);
       report.status = 'AMENDED';
       report.version = version;
       report.amendedAt = now;
@@ -336,6 +353,9 @@ export class ReportsService {
       report.signedOutBy = new Types.ObjectId(actor.id);
       report.requiredComplete = true;
       report.missingRequired = [];
+      report.releasedAt = null;
+      report.releasedBy = null;
+      report.releaseNote = null;
       report.pdfPath = null;
       report.pdfGeneratedAt = null;
       await report.save({ session });
@@ -381,6 +401,138 @@ export class ReportsService {
     const detail = await this.getById(reportId);
     await this.afterSignOut(detail, actor.labId);
     return detail;
+  }
+
+  async release(
+    reportId: string,
+    dto: ReleaseReportDto,
+    actor: AuthenticatedUser,
+  ): Promise<ReportDetail> {
+    const released = await withTransaction(this.connection, async (session) => {
+      const report = await this.reportModel.findById(reportId).session(session).exec();
+      if (!report) throw new NotFoundException('Report not found.');
+      if (report.status !== 'SIGNED_OUT' && report.status !== 'AMENDED') {
+        throw new ConflictException('Only a signed report can be released to the referrer.');
+      }
+      if (report.releasedAt && report.status !== 'AMENDED') {
+        return { alreadyReleased: true };
+      }
+      const caseDoc = await this.caseModel.findById(report.caseId).session(session).exec();
+      if (!caseDoc) throw new NotFoundException('Case not found.');
+      const patient = await this.patientModel.findById(caseDoc.patientId).session(session).exec();
+      if (!patient) throw new NotFoundException('Patient not found.');
+
+      const now = new Date();
+      report.releasedAt = now;
+      report.releasedBy = new Types.ObjectId(actor.id);
+      report.releaseNote = dto?.note?.trim() || null;
+      await report.save({ session });
+
+      await this.audit.record(
+        {
+          action: 'RELEASE',
+          entityType: 'Report',
+          entityId: report._id.toString(),
+          caseId: report.caseId.toString(),
+          after: {
+            releasedAt: now.toISOString(),
+            releasedBy: actor.email,
+            patient: `${patient.firstName} ${patient.lastName}`,
+          },
+          metadata: { note: report.releaseNote },
+        },
+        session,
+      );
+
+      return {
+        alreadyReleased: false,
+        caseId: caseDoc._id.toString(),
+        patientName: `${patient.firstName} ${patient.lastName}`,
+        email: caseDoc.referringClinician.email,
+        phone: caseDoc.referringClinician.phone,
+        referrerUserId: caseDoc.referringClinician.referrerUserId?.toString() ?? null,
+        accessionNumber: caseDoc.accessionNumber,
+      };
+    });
+
+    if (!released.alreadyReleased) {
+      const portalUrl = `${this.config.get<string>('PUBLIC_WEB_URL') ?? ''}/portal/login`;
+      await this.jobs.enqueueNotification({
+        labId: actor.labId,
+        type: 'REPORT_RELEASED',
+        title: `Report released — ${released.accessionNumber}`,
+        body: `The histopathology report for ${released.patientName} (${released.accessionNumber}) has been released to your referral portal. Sign in at ${portalUrl} with your email to view it.`,
+        caseId: released.caseId,
+        entityType: 'Report',
+        entityId: reportId,
+        userId: released.referrerUserId,
+        role: null,
+        channels: [
+          ...(released.referrerUserId ? (['IN_APP'] as const) : []),
+          ...(released.email ? (['EMAIL'] as const) : []),
+          ...(released.phone ? (['WHATSAPP'] as const) : []),
+        ],
+        recipient: { email: released.email, phone: released.phone, name: released.patientName },
+        metadata: { portalUrl, accessionNumber: released.accessionNumber },
+      });
+    }
+
+    return this.getById(reportId);
+  }
+
+  private async normalizeCoding(
+    input: CodingDto,
+    current: ReportEntity['coding'] | undefined,
+  ): Promise<ReportEntity['coding']> {
+    const snomed =
+      input.snomedCode === undefined
+        ? null
+        : await this.terminology.find('SNOMED_CT', input.snomedCode);
+    if (input.snomedCode && !snomed) {
+      throw new BadRequestException(`${input.snomedCode} is not a configured SNOMED CT code.`);
+    }
+    const morphology =
+      input.icdo3MorphologyCode === undefined
+        ? null
+        : await this.terminology.find('ICD_O_3_MORPHOLOGY', input.icdo3MorphologyCode);
+    if (input.icdo3MorphologyCode && !morphology) {
+      throw new BadRequestException(
+        `${input.icdo3MorphologyCode} is not a configured ICD-O-3 morphology code.`,
+      );
+    }
+    const topography =
+      input.icdo3TopographyCode === undefined
+        ? null
+        : await this.terminology.find('ICD_O_3_TOPOGRAPHY', input.icdo3TopographyCode);
+    if (input.icdo3TopographyCode && !topography) {
+      throw new BadRequestException(
+        `${input.icdo3TopographyCode} is not a configured ICD-O-3 topography code.`,
+      );
+    }
+    return {
+      snomedCode:
+        input.snomedCode === undefined ? (current?.snomedCode ?? null) : (snomed?.code ?? null),
+      snomedDisplay:
+        input.snomedCode === undefined
+          ? (current?.snomedDisplay ?? null)
+          : (snomed?.display ?? input.snomedDisplay?.trim() ?? null),
+      icdo3MorphologyCode:
+        input.icdo3MorphologyCode === undefined
+          ? (current?.icdo3MorphologyCode ?? null)
+          : (morphology?.code ?? null),
+      icdo3MorphologyDisplay:
+        input.icdo3MorphologyCode === undefined
+          ? (current?.icdo3MorphologyDisplay ?? null)
+          : (morphology?.display ?? input.icdo3MorphologyDisplay?.trim() ?? null),
+      icdo3TopographyCode:
+        input.icdo3TopographyCode === undefined
+          ? (current?.icdo3TopographyCode ?? null)
+          : (topography?.code ?? null),
+      icdo3TopographyDisplay:
+        input.icdo3TopographyCode === undefined
+          ? (current?.icdo3TopographyDisplay ?? null)
+          : (topography?.display ?? input.icdo3TopographyDisplay?.trim() ?? null),
+    };
   }
 
   async enqueuePdf(
@@ -457,6 +609,18 @@ export class ReportsService {
       });
     } catch (error) {
       this.logger.error({ err: error }, 'Could not enqueue report notification.');
+    }
+    try {
+      await this.qa.maybeCreatePeerReview(detail.id, {
+        id: detail.signedOutBy?.id ?? '',
+        labId,
+        name: detail.signedOutBy?.name ?? '',
+        email: detail.signedOutBy?.email ?? '',
+        role: 'PATHOLOGIST',
+        subspecialties: detail.signedOutBy?.subspecialties ?? [],
+      });
+    } catch (error) {
+      this.logger.warn({ err: error }, 'Could not create a sampled QA review.');
     }
   }
 

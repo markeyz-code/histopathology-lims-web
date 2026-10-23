@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsMongoId, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEnum, IsMongoId, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
 export class SpecimenListQueryDto extends PaginationQueryDto {
@@ -10,6 +10,33 @@ export class SpecimenListQueryDto extends PaginationQueryDto {
 }
 
 export class RejectSpecimenDto {
+  @ApiPropertyOptional({
+    enum: [
+      'MISLABELLED',
+      'WRONG_CONTAINER',
+      'FIXATION_DELAY',
+      'INSUFFICIENT_TISSUE',
+      'CONTAMINATION',
+      'BROKEN_SLIDE',
+      'LOST_IN_PROCESSING',
+      'UNREPRESENTATIVE',
+      'OTHER',
+    ],
+  })
+  @IsOptional()
+  @IsEnum([
+    'MISLABELLED',
+    'WRONG_CONTAINER',
+    'FIXATION_DELAY',
+    'INSUFFICIENT_TISSUE',
+    'CONTAMINATION',
+    'BROKEN_SLIDE',
+    'LOST_IN_PROCESSING',
+    'UNREPRESENTATIVE',
+    'OTHER',
+  ])
+  reasonCode?: string;
+
   @ApiPropertyOptional({ example: 'Container leaked; tissue uninterpretable.' })
   @IsString()
   @MinLength(5)

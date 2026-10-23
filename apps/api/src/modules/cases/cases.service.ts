@@ -79,6 +79,13 @@ export class CasesService {
       const allocated = await this.labsService.allocateAccession(actor.labId, session);
       const lab = allocated.lab;
       const patient = await this.patientsService.resolveForAccession(dto.patient, actor, session);
+      const referrerEmail = dto.referringClinician.email?.trim().toLowerCase();
+      const referrerUser = referrerEmail
+        ? await this.userModel
+            .findOne({ email: referrerEmail, role: 'REFERRER', active: true })
+            .session(session)
+            .exec()
+        : null;
 
       const priority = dto.priority;
       const tatHours = lab.tatHours[priority] ?? 72;
@@ -96,8 +103,8 @@ export class CasesService {
           name: dto.referringClinician.name.trim(),
           facility: dto.referringClinician.facility?.trim() || null,
           phone: dto.referringClinician.phone?.trim() || null,
-          email: dto.referringClinician.email?.trim().toLowerCase() || null,
-          referrerUserId: null,
+          email: referrerEmail || null,
+          referrerUserId: referrerUser?._id ?? null,
         },
         assignedPathologistId: pathologist ? pathologist._id : null,
         receivedAt,

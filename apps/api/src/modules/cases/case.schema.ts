@@ -98,4 +98,6 @@ CaseSchema.index({ labId: 1, status: 1, priorityRank: 1, tatDeadline: 1 });
 CaseSchema.index({ labId: 1, patientId: 1 });
 CaseSchema.index({ labId: 1, assignedPathologistId: 1, status: 1 });
 CaseSchema.index({ labId: 1, receivedAt: -1 });
+CaseSchema.index({ labId: 1, 'referringClinician.email': 1 });
+CaseSchema.index({ labId: 1, 'referringClinician.referrerUserId': 1 });
 CaseSchema.index({ labId: 1, tatDeadline: 1, tatBreachedAt: 1 });

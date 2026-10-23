@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsMongoId, IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsMongoId,
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 
 export class CreateReportDto {
   @ApiProperty()
@@ -7,10 +16,62 @@ export class CreateReportDto {
   protocolId!: string;
 }
 
+export class CodingDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  snomedCode?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(240)
+  snomedDisplay?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  icdo3MorphologyCode?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(240)
+  icdo3MorphologyDisplay?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  icdo3TopographyCode?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(240)
+  icdo3TopographyDisplay?: string | null;
+}
+
 export class UpdateReportDto {
   @ApiProperty({ type: Object, description: 'Field key → value map for the protocol' })
   @IsObject()
   data!: Record<string, unknown>;
+
+  @ApiPropertyOptional({ type: CodingDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CodingDto)
+  coding?: CodingDto;
+}
+
+export class ReleaseReportDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
 }
 
 export class AmendReportDto {
@@ -24,4 +85,10 @@ export class AmendReportDto {
   @IsOptional()
   @IsObject()
   data?: Record<string, unknown>;
+
+  @ApiPropertyOptional({ type: CodingDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CodingDto)
+  coding?: CodingDto;
 }

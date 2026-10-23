@@ -28,6 +28,7 @@ export interface SpecimenEntity {
   status: PhysicalState;
   currentStation: Station | null;
   rejectionReason: string | null;
+  rejectionCode: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +49,7 @@ export const SpecimenSchema = new Schema<SpecimenEntity>(
     status: { type: String, enum: PHYSICAL_STATES, required: true, default: 'ACCESSIONED' },
     currentStation: { type: String, default: null },
     rejectionReason: { type: String, default: null },
+    rejectionCode: { type: String, default: null },
   },
   baseSchemaOptions('specimens'),
 );

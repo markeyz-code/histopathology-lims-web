@@ -357,6 +357,29 @@ export class PdfService {
       }
     }
 
+    const coding = report.coding;
+    const codingLines = [
+      coding?.snomedCode
+        ? `SNOMED CT  ${coding.snomedCode}  ${coding.snomedDisplay ?? ''}`.trim()
+        : null,
+      coding?.icdo3MorphologyCode
+        ? `ICD-O-3 morphology  ${coding.icdo3MorphologyCode}  ${coding.icdo3MorphologyDisplay ?? ''}`.trim()
+        : null,
+      coding?.icdo3TopographyCode
+        ? `ICD-O-3 topography  ${coding.icdo3TopographyCode}  ${coding.icdo3TopographyDisplay ?? ''}`.trim()
+        : null,
+    ].filter((line): line is string => Boolean(line));
+    if (codingLines.length > 0) {
+      this.ensureSpace(doc, 60);
+      this.drawSectionTitle(doc, 'Clinical coding');
+      for (const line of codingLines) {
+        this.ensureSpace(doc, 14);
+        doc.font('Body').fontSize(8.8).fillColor(INK).text(line, { lineGap: 1.8 });
+        doc.x = MARGIN;
+        doc.moveDown(0.12);
+      }
+    }
+
     this.ensureSpace(doc, 170);
     this.drawSectionTitle(doc, 'Authorization');
     const signatureY = doc.y + 8;
