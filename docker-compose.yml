@@ -1,0 +1,130 @@
+name: histopathology-lims
+
+services:
+  mongo:
+    image: mongo:7.0
+    restart: unless-stopped
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all', '--quiet']
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand({ ping: 1 }).ok']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  mongo-init:
+    image: mongo:7.0
+    restart: 'no'
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - ./docker/mongo-init.js:/scripts/mongo-init.js:ro
+    entrypoint: ['mongosh', '--host', 'mongo:27017', '--quiet', '/scripts/mongo-init.js']
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    ports:
+      - '4000:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      API_PORT: '4000'
+      API_PREFIX: api
+      CORS_ORIGINS: http://localhost:3000
+      PUBLIC_WEB_URL: http://localhost:3000
+      PUBLIC_API_URL: http://localhost:4000/api
+      MONGODB_URI: mongodb://mongo:27017/histo_lims?replicaSet=rs0
+      REDIS_URL: redis://redis:6379
+      QUEUES_ENABLED: 'true'
+      SWAGGER_ENABLED: 'true'
+      LOG_LEVEL: info
+      STORAGE_DIR: /app/storage
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-local-access-secret-000000000000000000000000000000000}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-local-refresh-secret-00000000000000000000000000000000}
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 7d
+    volumes:
+      - report-storage:/app/storage
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    environment:
+      NUXT_PUBLIC_API_BASE: http://localhost:4000/api
+      NUXT_PUBLIC_WEB_BASE: http://localhost:3000
+      NUXT_PUBLIC_APP_NAME: Histopathology LIMS
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  seed:
+    profiles: ['tools']
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/histo_lims?replicaSet=rs0
+      SEED_RESET: 'true'
+    command: ['node', 'dist/seed/run-seed.js']
+
+volumes:
+  mongo-data:
+  redis-data:
+  report-storage:
