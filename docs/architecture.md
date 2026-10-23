@@ -1,6 +1,6 @@
 # Architecture notes
 
-> This document covers the Phase 1 core. Phase 2/3 modules — referral portal, notifications, inventory, QA, offline sync, FHIR/HL7, WSI, terminology and billing — are documented in [phase-2-3.md](phase-2-3.md).
+> This document covers the Phase 1 core. Phase 1.5 introduces the core/discipline split and TestRequest model; see [phase-1.5-migration.md](phase-1.5-migration.md). Earlier extension modules — referral portal, notifications, inventory, QA, offline sync, FHIR/HL7, WSI, terminology and billing — are documented in [phase-2-3.md](phase-2-3.md).
 
 This document records the structural decisions behind Phase 1. It is intentionally narrower than the product README: the focus is how the software keeps a physical specimen's history correct.
 

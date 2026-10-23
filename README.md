@@ -1,10 +1,10 @@
-# Histopathology LIMS
+# Multi-discipline Laboratory LIMS
 
-**Phase 2 / 3 — a connected, offline-capable histopathology LIMS.** A block-and-slide level laboratory information management system for hospital histopathology departments, designed Nigeria-first for low-resource, low-bandwidth laboratories.
+**Phase 1.5 — a multi-discipline LIMS foundation.** A shared-core laboratory information management system for general medical laboratories, designed Nigeria-first for low-resource, low-bandwidth settings. Histopathology is the most complete module; haematology, chemical pathology and medical microbiology have registered discipline foundations waiting for their result workflows.
 
-Phase 1 built the custody, worklist and synoptic reporting core. Phase 2 adds the referral portal, real notification delivery, reagent/antibody lot control and QA peer review. Phase 3 adds the offline-first scan queue, FHIR R4, HL7 v2, whole-slide imaging, SNOMED CT / ICD-O-3 coding, Paystack/Flutterwave payments and HMO claims export.
+Every laboratory enables only the disciplines it operates. Patient, case, specimen, custody, audit, worklist and report scaffolding are shared. Discipline modules contribute their own units, state machines, worklist configuration, result schemas, rules and report templates through a `DisciplineRegistry`.
 
-Most LIMS stop at the specimen. This one follows the physical work: a specimen becomes cassettes, cassettes become slides, and every movement is an immutable custody event. Status is never typed in — it is derived by a state machine from the last scan. Pathologists get a prioritised worklist, structured synoptic reporting, server-rendered PDFs with verification QR codes, and reports that lock on sign-out.
+Histopathology keeps the block-and-slide custody model: a specimen becomes cassettes, cassettes become slides, and every movement is an immutable custody event. Status is derived by a state machine from the last scan, not typed in. Pathologists get a prioritised worklist, structured synoptic reporting, server-rendered PDFs with verification QR codes, and reports that lock on sign-out.
 
 ![Dashboard in light mode](docs/screens/dashboard-light.webp)
 
@@ -22,6 +22,21 @@ Most LIMS stop at the specimen. This one follows the physical work: a specimen b
 
 ---
 
+## Phase 1.5 — core / discipline foundation
+
+- New `core/` and `disciplines/` API layout; core never imports a discipline module.
+- `DisciplineRegistry`, `StateMachineRegistry`, case-artifact, label, custody and report ports.
+- `TestRequest` collection with one histopathology request created per existing/new case.
+- `labs.enabledDisciplines`, `labs.accessionPrefixes`, `users.disciplines`.
+- New roles `PHLEBOTOMIST` and `SCIENTIST`; guards check role, lab enablement and clinical assignment.
+- Discipline-aware navigation and lab/user administration; every existing URL is unchanged.
+- Additive API: `GET /api/test-requests` and `GET /api/test-requests/case/:caseId`.
+- Idempotent backfill: `pnpm migrate:phase15`.
+
+![Discipline and accession-prefix configuration](docs/screens/disciplines.jpg)
+
+Migration and rollback instructions: [docs/phase-1.5-migration.md](docs/phase-1.5-migration.md).
+
 ## What Phase 1 delivers
 
 | Requirement                                          | Implementation                                                                                                                                                                           |
@@ -37,10 +52,12 @@ Most LIMS stop at the specimen. This one follows the physical work: a specimen b
 | PDF report                                           | Lab letterhead, synoptic narrative, signature block, QR verification, Unicode fonts, page numbering, draft watermark                                                                     |
 | Dashboard                                            | Cases by status and priority, TAT by stage, overdue breach watch, pathologist workload, recent accessions                                                                                |
 | Audit                                                | Every create, update, scan, sign-out and amendment with actor, before/after values, IP/user agent and request ID                                                                         |
-| Offline resilience                                   | Installable PWA, cached app shell, offline screen, IndexedDB scan queue, idempotent batch replay and on-device queue badge                                                               |
+| Offline resilience                                   | Installable PWA, cached app shell, offline screen, IndexedDB scan queue, idempotent batch replay and on-device queue badge (existing extension, new Phase 6)                             |
 | Quality                                              | Strict TypeScript, Zod contracts shared by both apps, class-validator DTOs, Swagger, unit + E2E tests, ESLint and Prettier                                                               |
 
-## What Phase 2 and Phase 3 add
+## Existing extension capabilities
+
+These capabilities were already implemented under the original Phase 2/3 numbering. The new roadmap places them in later phases; they remain live and are now isolated under `apps/api/src/extensions/` and `apps/web` feature pages. They are listed here as implemented capability, not as the current roadmap phase.
 
 | Requirement                  | Implementation                                                                                                                                                                      |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -82,26 +99,35 @@ flowchart LR
 
 ```
 apps/
-  api/        NestJS: auth, labs, users, patients, cases, specimens,
-              blocks, slides, custody, worklist, reports, protocols,
-              labels, dashboard, audit, pdf, jobs
-  web/        Nuxt 3: app shell, accessioning, scan station, worklist,
-              locator, synoptic editor, referral portal, QA, inventory,
-              billing, integrations, verification, offline queue
+  api/        NestJS
+              core/         auth, labs, users, patients, cases, test-requests,
+                            specimens, custody, audit, worklist, reports,
+                            labels, dashboard, notifications, jobs
+              disciplines/  histopathology, haematology, chemistry, microbiology
+              extensions/   retained later-roadmap modules (portal, billing,
+                            inventory, QA, FHIR, HL7, WSI, terminology, sync)
+  web/        Nuxt 3: shared shell + route-grouped histopathology workspace;
+              referral portal, QA, inventory, billing, integrations, offline
 packages/
   shared/     Domain vocabulary, state machines, Zod schemas, API types,
-              TAT + accession formatting, protocol validation/narrative,
-              Phase 2/3 contracts
+              discipline/test-request contracts, TAT + accession formatting,
+              protocol validation/narrative
 docker/       Mongo replica-set initialiser
 docs/         Architecture notes and screenshots
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the Phase 1 core and [docs/phase-2-3.md](docs/phase-2-3.md) for referral, inventory, QA, offline sync, interoperability and billing design.
+See [docs/architecture.md](docs/architecture.md) for the shared core, [docs/phase-1.5-migration.md](docs/phase-1.5-migration.md) for the discipline refactor and [docs/phase-2-3.md](docs/phase-2-3.md) for the already-built extension modules (legacy numbering).
 
 ### Domain hierarchy
 
 ```
-Patient → Case (accession) → Specimen → Block (cassette) → Slide
+Patient → Case (encounter/accession)
+              → TestRequest (discipline)     → Specimen
+              → Histopathology: Block → Slide
+              → Haematology/Chemistry: Aliquot/Tube → ResultSet
+              → Microbiology: Culture → Isolate → SusceptibilityResult
+
+Histopathology remains fully implemented. The other discipline result units are Phase 2/4 work; their state machines are registered now.
 ```
 
 Every physical action is a `custody_events` document:
@@ -116,8 +142,12 @@ Custody events, audit logs and signed report versions are **append-only** at the
 ### Physical state machine
 
 ```
-ACCESSIONED → GROSSED → PROCESSING → EMBEDDED → CUT → STAINED
-            → WITH_PATHOLOGIST → REPORTED → ARCHIVED
+Histopathology: ACCESSIONED → GROSSED → PROCESSING → EMBEDDED → CUT
+                → STAINED → WITH_PATHOLOGIST → REPORTED → ARCHIVED
+Haematology/Chemistry sample: COLLECTED → RECEIVED → ANALYSING → RESULTED
+                → VERIFIED → RELEASED (+ REJECTED, RERUN_REQUESTED)
+Microbiology culture: RECEIVED → PLATED → INCUBATING → READ → ID_DONE
+                → AST_DONE → REPORTED (+ REJECTED)
 
 CUT / STAINED / WITH_PATHOLOGIST → RECUT_REQUESTED → CUT → STAINED
 Any pre-archive state → REJECTED  (slides may recover into STAINED)
@@ -192,6 +222,8 @@ All seeded users share one lab, **HISTO**. Passwords are shown for local demonst
 | Receptionist                | `reception@histo.ng`    | `Reception#2026`    |
 | Grossing officer            | `grosser@histo.ng`      | `Grosser#2026`      |
 | Medical lab scientist       | `technologist@histo.ng` | `Technologist#2026` |
+| Phlebotomist                | `phlebotomist@histo.ng` | `Phlebotomist#2026` |
+| Laboratory scientist        | `scientist@histo.ng`    | `Scientist#2026`    |
 | Pathologist (breast/GI)     | `pathologist@histo.ng`  | `Pathologist#2026`  |
 | Pathologist (urology/gynae) | `pathologist2@histo.ng` | `Pathologist#2026`  |
 | Referring clinician         | `referrer@clinic.ng`    | `Referrer#2026`     |
@@ -217,25 +249,26 @@ The seed creates 30 realistic cases across received, grossed, processing, embedd
 | `LOG_LEVEL`                          | `info`                                                                      | Pino level                                    |
 | `NUXT_PUBLIC_API_BASE`               | `http://localhost:4000/api`                                                 | Browser-facing API base                       |
 | `NUXT_PUBLIC_WEB_BASE`               | `http://localhost:3000`                                                     | Browser-facing web base                       |
-| `NUXT_PUBLIC_APP_NAME`               | `Histopathology LIMS`                                                       | Shell label                                   |
+| `NUXT_PUBLIC_APP_NAME`               | `Laboratory LIMS`                                                           | Shell label                                   |
 | `SEED_RESET`                         | `false`                                                                     | Allow the seed script to drop the database    |
 
 The API validates the environment with Zod at startup and fails fast on missing or unsafe values. In local development both apps read the repository-root `.env`; in Docker, Compose injects the values.
 
 ## Scripts
 
-| Command                               | What it does                                                                                                   |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `pnpm dev`                            | Shared watcher + API + web                                                                                     |
-| `pnpm build`                          | Build shared, API and web                                                                                      |
-| `pnpm typecheck`                      | Strict TypeScript across all workspaces                                                                        |
-| `pnpm lint` / `pnpm format:check`     | ESLint / Prettier checks                                                                                       |
-| `pnpm test:unit`                      | Custody state machine and report sign-out policy tests                                                         |
-| `pnpm test:e2e`                       | MongoDB replica-set E2E: accession → blocks → scans → slides → report → PDF → amendment, plus tenant isolation |
-| `pnpm verify`                         | Lint + typecheck + unit + E2E + full build                                                                     |
-| `pnpm seed` / `pnpm seed:reset`       | Seed only if empty / drop and reseed                                                                           |
-| `pnpm db:up` / `pnpm db:down`         | Local Mongo replica set + Redis                                                                                |
-| `pnpm docker:up` / `pnpm docker:seed` | Compose stack / one-shot seed                                                                                  |
+| Command                               | What it does                                                                                                                         |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm dev`                            | Shared watcher + API + web                                                                                                           |
+| `pnpm build`                          | Build shared, API and web                                                                                                            |
+| `pnpm typecheck`                      | Strict TypeScript across all workspaces                                                                                              |
+| `pnpm lint` / `pnpm format:check`     | ESLint / Prettier checks                                                                                                             |
+| `pnpm test:unit`                      | State-machine, discipline-registry and report-policy tests                                                                           |
+| `pnpm test:e2e`                       | MongoDB replica-set E2E: histopathology end-to-end, TestRequest, discipline guards, portal, inventory, QA, interop, billing and sync |
+| `pnpm verify`                         | Lint + typecheck + unit + E2E + full build                                                                                           |
+| `pnpm seed` / `pnpm seed:reset`       | Seed only if empty / drop and reseed                                                                                                 |
+| `pnpm migrate:phase15`                | Idempotent Phase 1.5 backfill (labs, users, TestRequests)                                                                            |
+| `pnpm db:up` / `pnpm db:down`         | Local Mongo replica set + Redis                                                                                                      |
+| `pnpm docker:up` / `pnpm docker:seed` | Compose stack / one-shot seed                                                                                                        |
 
 ### API surface (abridged)
 
@@ -258,7 +291,10 @@ GET    /api/users[/pathologists]                   GET  /api/labs/me
 GET    /api/audit                                  POST /api/maintenance/tat-check
 GET    /api/health  (public)                       Swagger at /docs
 
-Phase 2/3 additions:
+Phase 1.5 additions:
+GET    /api/test-requests                         GET /api/test-requests/case/:caseId
+
+Previously implemented extension endpoints:
 POST   /api/portal/auth/request | /verify          GET /api/portal/cases[/:id]
 GET    /api/portal/cases/:id/report.pdf            POST /api/reports/:id/release
 GET    /api/inventory/lots                         POST /api/inventory/lots
@@ -288,7 +324,7 @@ pnpm test:e2e
 pnpm verify
 ```
 
-The E2E suite (16 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
+The E2E suite (17 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
 
 - accessioning generates a formatted accession number and unique specimen barcode
 - role checks and invalid scan transitions reject correctly
@@ -304,6 +340,9 @@ The E2E suite (16 tests) starts an ephemeral MongoDB **replica set** with `mongo
 - FHIR R4, WSI linking and HL7 order ingestion respond correctly
 - a mock Paystack checkout settles the invoice and appears in the HMO CSV
 - an offline scan mutation replays idempotently
+- every accession creates a histopathology TestRequest
+- a haem-only pathologist is denied histopathology routes while a histo pathologist is allowed
+- block/slide label providers still resolve through the core label service
 
 ## Design direction
 
@@ -325,17 +364,19 @@ Tokens live in [`apps/web/tailwind.config.ts`](apps/web/tailwind.config.ts) and 
 - Payment webhooks are signature-verified; never trust a client redirect as proof of payment.
 - Terminology content is licensed separately. The seed subset is for demonstration only.
 
-## Phase 4 / hardening
+## Roadmap
 
-The Phase 2/3 feature set is implemented. The next engineering pass is operational hardening, not a hidden backlog:
+| Phase | Scope                                                                                                                              | Status   |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1     | Core custody, accessioning, labels, worklist, synoptic reporting, PDF, audit, tenancy                                              | Complete |
+| 1.5   | Core/discipline split, registries, TestRequest, enabled/user disciplines, ports, migration                                         | Complete |
+| 2     | Test catalogue, result entry with versioning, rules engine, haematology/chemistry, QC + Levey-Jennings/Westgard, cumulative report | Next     |
+| 3     | Multi-discipline PDF/delivery, referrer portal, billing and payments, pre-analytical collection flow                               | Pending  |
+| 4     | Microbiology culture/AST, CLSI/EUCAST breakpoints, cascade reporting, antibiogram, WHONET                                          | Pending  |
+| 5     | Reagent inventory, QA, equipment/temperature logs, non-conformances/CAPA, cross-lab send-outs                                      | Pending  |
+| 6     | Offline sync, FHIR/HL7, instrument connector, WSI, SNOMED CT/ICD-O-3                                                               | Pending  |
 
-- move refresh tokens to `HttpOnly` cookies behind a same-site reverse proxy and add gateway rate limiting
-- replace local PDF storage with encrypted object storage and retention policies
-- run the HL7 MLLP listener behind a network allowlist/TLS terminator and add message replay monitoring
-- connect production SMTP/Termii/Twilio/Paystack/Flutterwave credentials and contract tests against provider sandboxes
-- load a licensed, maintained SNOMED CT / ICD-O-3 release and define a terminology update process
-- extend the offline queue beyond scans to grossing/stain-run drafts with conflict-resolution UI
-- add a full data-processing agreement, backup drills and NDPR/NDPA access reviews
+Already-built extension features are retained and mapped into Phases 3–6; they are not removed while the roadmap catches up.
 
 ## Conventional commits
 

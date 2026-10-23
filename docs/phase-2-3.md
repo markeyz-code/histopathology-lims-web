@@ -1,4 +1,6 @@
-# Phase 2 and Phase 3 architecture
+# Phase 2 and Phase 3 architecture (legacy numbering)
+
+> **Roadmap note:** this document was written under the original Phase 2/3 numbering. The product is now a multi-discipline LIMS and those features are redistributed into the new roadmap. The implementations remain in place as `apps/api/src/extensions/` and are revalidated in their new phases; this file is retained as an implementation reference.
 
 Phase 1 remains the source of truth for patient, specimen, block, slide, custody, report and audit records. This document describes how the Phase 2/3 modules attach to that core without weakening its append-only or tenant-scoped guarantees.
 
