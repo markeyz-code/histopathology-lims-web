@@ -1,5 +1,6 @@
 export * from './constants';
 export * from './state-machine';
+export * from './state-machine-registry';
 export * from './formats';
 export * from './tat';
 export * from './protocol';
@@ -18,3 +19,4 @@ export * from './schemas/qa';
 export * from './schemas/billing';
 export * from './schemas/interop';
 export * from './schemas/sync';
+export * from './schemas/discipline';

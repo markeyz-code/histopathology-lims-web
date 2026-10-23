@@ -1,4 +1,4 @@
-import type { Role } from '@lims/shared';
+import type { Discipline, Role } from '@lims/shared';
 
 export interface AuthenticatedUser {
   id: string;
@@ -7,6 +7,8 @@ export interface AuthenticatedUser {
   email: string;
   role: Role;
   subspecialties: string[];
+  disciplines: Discipline[];
+  labEnabledDisciplines: Discipline[];
 }
 
 export interface AccessTokenPayload {
@@ -15,6 +17,8 @@ export interface AccessTokenPayload {
   name: string;
   email: string;
   role: Role;
+  disciplines?: Discipline[];
+  labEnabledDisciplines?: Discipline[];
   type: 'access';
   iat?: number;
   exp?: number;
@@ -33,8 +37,10 @@ const ROLE_SET = new Set<string>([
   'SUPER_ADMIN',
   'LAB_ADMIN',
   'RECEPTIONIST',
+  'PHLEBOTOMIST',
   'GROSSER',
   'TECHNOLOGIST',
+  'SCIENTIST',
   'PATHOLOGIST',
   'REFERRER',
 ]);

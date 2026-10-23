@@ -7,38 +7,14 @@ import {
   type Station,
 } from './constants';
 
-type TransitionTable = Partial<Record<PhysicalState, readonly PhysicalState[]>>;
+import {
+  HISTOPATHOLOGY_PHYSICAL_TRANSITIONS,
+  stateMachineRegistry,
+  type StateMachineDefinition,
+} from './state-machine-registry';
 
-/**
- * The physical workflow is a state machine, not a set of editable status fields.
- * A transition is legal only if it appears here. Every scan or system action that
- * changes an entity's state writes an immutable custody event and projects the new
- * state onto the entity inside the same transaction.
- */
-export const PHYSICAL_TRANSITIONS: Record<PhysicalEntityType, TransitionTable> = {
-  SPECIMEN: {
-    ACCESSIONED: ['GROSSED', 'REJECTED'],
-    GROSSED: ['ARCHIVED', 'REJECTED'],
-  },
-  BLOCK: {
-    ACCESSIONED: ['GROSSED', 'REJECTED'],
-    GROSSED: ['PROCESSING', 'REJECTED'],
-    PROCESSING: ['EMBEDDED', 'REJECTED'],
-    EMBEDDED: ['CUT', 'REJECTED'],
-    CUT: ['REPORTED', 'ARCHIVED', 'REJECTED'],
-    REPORTED: ['ARCHIVED'],
-    REJECTED: ['PROCESSING', 'ARCHIVED'],
-  },
-  SLIDE: {
-    ACCESSIONED: ['CUT', 'REJECTED'],
-    CUT: ['STAINED', 'RECUT_REQUESTED', 'REJECTED'],
-    STAINED: ['WITH_PATHOLOGIST', 'RECUT_REQUESTED', 'REJECTED'],
-    WITH_PATHOLOGIST: ['REPORTED', 'RECUT_REQUESTED'],
-    RECUT_REQUESTED: ['CUT'],
-    REPORTED: ['ARCHIVED'],
-    REJECTED: ['STAINED', 'ARCHIVED'],
-  },
-};
+export { stateMachineRegistry, type StateMachineDefinition };
+export const PHYSICAL_TRANSITIONS = HISTOPATHOLOGY_PHYSICAL_TRANSITIONS;
 
 export const CASE_TRANSITIONS: Record<CaseStatus, readonly CaseStatus[]> = {
   RECEIVED: ['IN_PROGRESS'],

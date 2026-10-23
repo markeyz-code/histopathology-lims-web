@@ -15,33 +15,38 @@ import {
   RequestContextMiddleware,
   TenantMiddleware,
 } from './common/middleware/request-context.middleware';
-import { AuditModule } from './modules/audit/audit.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { BillingModule } from './modules/billing/billing.module';
-import { BlocksModule } from './modules/blocks/blocks.module';
-import { CasesModule } from './modules/cases/cases.module';
-import { CustodyModule } from './modules/custody/custody.module';
-import { DashboardModule } from './modules/dashboard/dashboard.module';
-import { FhirModule } from './modules/fhir/fhir.module';
-import { Hl7Module } from './modules/hl7/hl7.module';
-import { InventoryModule } from './modules/inventory/inventory.module';
-import { JobsModule } from './modules/jobs/jobs.module';
-import { LabelsModule } from './modules/labels/labels.module';
-import { LabsModule } from './modules/labs/labs.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
-import { PatientsModule } from './modules/patients/patients.module';
-import { PortalModule } from './modules/portal/portal.module';
-import { PdfModule } from './modules/pdf/pdf.module';
-import { ProtocolsModule } from './modules/protocols/protocols.module';
-import { QaModule } from './modules/qa/qa.module';
-import { ReportsModule } from './modules/reports/reports.module';
-import { SlidesModule } from './modules/slides/slides.module';
-import { SpecimensModule } from './modules/specimens/specimens.module';
-import { SyncModule } from './modules/sync/sync.module';
-import { TerminologyModule } from './modules/terminology/terminology.module';
-import { UsersModule } from './modules/users/users.module';
-import { WorklistModule } from './modules/worklist/worklist.module';
-import { WsiModule } from './modules/wsi/wsi.module';
+import { AuditModule } from './core/audit/audit.module';
+import { AuthModule } from './core/auth/auth.module';
+import { BillingModule } from './extensions/billing/billing.module';
+import { TestRequestsModule } from './core/test-requests/test-requests.module';
+import { DisciplineRegistryModule } from './core/discipline/discipline.module';
+import { DisciplineGuard } from './core/discipline/discipline.guard';
+import { DisciplinesModule } from './disciplines/disciplines.module';
+import { HistopathologyModule } from './disciplines/histopathology/histopathology.module';
+import { BlocksModule } from './disciplines/histopathology/blocks/blocks.module';
+import { CasesModule } from './core/cases/cases.module';
+import { CustodyModule } from './core/custody/custody.module';
+import { DashboardModule } from './core/dashboard/dashboard.module';
+import { FhirModule } from './extensions/fhir/fhir.module';
+import { Hl7Module } from './extensions/hl7/hl7.module';
+import { InventoryModule } from './extensions/inventory/inventory.module';
+import { JobsModule } from './core/jobs/jobs.module';
+import { LabelsModule } from './core/labels/labels.module';
+import { LabsModule } from './core/labs/labs.module';
+import { NotificationsModule } from './core/notifications/notifications.module';
+import { PatientsModule } from './core/patients/patients.module';
+import { PortalModule } from './extensions/portal/portal.module';
+import { PdfModule } from './disciplines/histopathology/pdf/pdf.module';
+import { ProtocolsModule } from './disciplines/histopathology/protocols/protocols.module';
+import { QaModule } from './extensions/qa/qa.module';
+import { ReportsModule } from './core/reports/reports.module';
+import { SlidesModule } from './disciplines/histopathology/slides/slides.module';
+import { SpecimensModule } from './core/specimens/specimens.module';
+import { SyncModule } from './extensions/sync/sync.module';
+import { TerminologyModule } from './extensions/terminology/terminology.module';
+import { UsersModule } from './core/users/users.module';
+import { WorklistModule } from './core/worklist/worklist.module';
+import { WsiModule } from './extensions/wsi/wsi.module';
 
 @Module({
   imports: [
@@ -115,6 +120,10 @@ import { WsiModule } from './modules/wsi/wsi.module';
     }),
     AuditModule,
     BillingModule,
+    TestRequestsModule,
+    DisciplineRegistryModule,
+    DisciplinesModule,
+    HistopathologyModule,
     IdempotencyModule,
     AuthModule,
     LabsModule,
@@ -146,6 +155,7 @@ import { WsiModule } from './modules/wsi/wsi.module';
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: DisciplineGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
 })

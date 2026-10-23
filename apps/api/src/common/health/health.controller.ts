@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Connection } from 'mongoose';
-import { Public } from '../../common/decorators/auth.decorators';
+import { Public } from '../decorators/auth.decorators';
 
 @ApiTags('Health')
 @Controller('health')

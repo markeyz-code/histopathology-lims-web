@@ -66,6 +66,11 @@ export const accessionSchema = z.object({
     .optional()
     .transform((value) => value || undefined),
   priority: z.enum(PRIORITIES),
+  discipline: z
+    .enum(['HISTOPATHOLOGY', 'HAEMATOLOGY', 'CHEMICAL_PATHOLOGY', 'MICROBIOLOGY'])
+    .default('HISTOPATHOLOGY'),
+  testCode: z.string().trim().max(80).optional(),
+  testName: z.string().trim().max(160).optional(),
   subspecialty: z.string().trim().max(80).optional(),
   assignedPathologistId: objectIdSchema.optional(),
   specimens: z
@@ -95,6 +100,9 @@ export const caseListQuerySchema = z.object({
   status: z.enum(CASE_STATUSES).optional(),
   priority: z.enum(PRIORITIES).optional(),
   pathologistId: objectIdSchema.optional(),
+  discipline: z
+    .enum(['HISTOPATHOLOGY', 'HAEMATOLOGY', 'CHEMICAL_PATHOLOGY', 'MICROBIOLOGY'])
+    .optional(),
   subspecialty: z.string().trim().max(80).optional(),
   from: z.string().trim().max(40).optional(),
   to: z.string().trim().max(40).optional(),

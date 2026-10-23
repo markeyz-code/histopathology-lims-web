@@ -7,8 +7,10 @@ export const ROLES = [
   'SUPER_ADMIN',
   'LAB_ADMIN',
   'RECEPTIONIST',
+  'PHLEBOTOMIST',
   'GROSSER',
   'TECHNOLOGIST',
+  'SCIENTIST',
   'PATHOLOGIST',
   'REFERRER',
 ] as const;
@@ -18,8 +20,10 @@ export const ROLE_LABELS: Record<Role, string> = {
   SUPER_ADMIN: 'Super administrator',
   LAB_ADMIN: 'Laboratory administrator',
   RECEPTIONIST: 'Receptionist',
+  PHLEBOTOMIST: 'Phlebotomist',
   GROSSER: 'Grossing officer',
   TECHNOLOGIST: 'Medical laboratory scientist',
+  SCIENTIST: 'Laboratory scientist',
   PATHOLOGIST: 'Pathologist',
   REFERRER: 'Referring clinician',
 };
@@ -246,6 +250,10 @@ export const CAPABILITIES = [
   'qa',
   'billing',
   'interop',
+  'collection',
+  'results',
+  'verification',
+  'disciplines',
 ] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
@@ -268,10 +276,34 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'qa',
     'billing',
     'interop',
+    'collection',
+    'results',
+    'verification',
+    'disciplines',
   ],
-  RECEPTIONIST: ['dashboard', 'accession', 'cases', 'locator', 'labels', 'billing'],
+  RECEPTIONIST: ['dashboard', 'accession', 'cases', 'locator', 'labels', 'billing', 'collection'],
+  PHLEBOTOMIST: ['dashboard', 'cases', 'locator', 'labels', 'collection'],
   GROSSER: ['dashboard', 'cases', 'scan', 'grossing', 'locator', 'labels'],
-  TECHNOLOGIST: ['dashboard', 'cases', 'scan', 'lab_work', 'locator', 'labels', 'inventory'],
+  TECHNOLOGIST: [
+    'dashboard',
+    'cases',
+    'scan',
+    'lab_work',
+    'locator',
+    'labels',
+    'inventory',
+    'results',
+  ],
+  SCIENTIST: [
+    'dashboard',
+    'cases',
+    'scan',
+    'lab_work',
+    'locator',
+    'labels',
+    'results',
+    'verification',
+  ],
   PATHOLOGIST: [
     'dashboard',
     'cases',
@@ -282,6 +314,9 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'locator',
     'labels',
     'qa',
+    'results',
+    'verification',
+    'disciplines',
   ],
   REFERRER: ['referrer'],
 };
@@ -523,3 +558,112 @@ export type ClaimStatus = (typeof CLAIM_STATUSES)[number];
 
 export const SYNC_MUTATION_TYPES = ['SCAN', 'REJECT', 'RECUT'] as const;
 export type SyncMutationType = (typeof SYNC_MUTATION_TYPES)[number];
+
+// ─────────────────────────────────────────────────────────────
+// Multi-discipline platform
+// ─────────────────────────────────────────────────────────────
+
+export const DISCIPLINES = [
+  'HISTOPATHOLOGY',
+  'HAEMATOLOGY',
+  'CHEMICAL_PATHOLOGY',
+  'MICROBIOLOGY',
+] as const;
+export type Discipline = (typeof DISCIPLINES)[number];
+
+export const DISCIPLINE_LABELS: Record<Discipline, string> = {
+  HISTOPATHOLOGY: 'Histopathology',
+  HAEMATOLOGY: 'Haematology',
+  CHEMICAL_PATHOLOGY: 'Chemical pathology',
+  MICROBIOLOGY: 'Medical microbiology',
+};
+
+export const DISCIPLINE_SHORT_LABELS: Record<Discipline, string> = {
+  HISTOPATHOLOGY: 'Histo',
+  HAEMATOLOGY: 'Haem',
+  CHEMICAL_PATHOLOGY: 'Chem',
+  MICROBIOLOGY: 'Micro',
+};
+
+/** Optional per-discipline prefix override; empty means use the lab accession prefix. */
+export const DISCIPLINE_ACCESSION_PREFIXES: Record<Discipline, string> = {
+  HISTOPATHOLOGY: 'HP',
+  HAEMATOLOGY: 'HAE',
+  CHEMICAL_PATHOLOGY: 'CHM',
+  MICROBIOLOGY: 'MIC',
+};
+
+export const TEST_REQUEST_STATUSES = [
+  'RECEIVED',
+  'COLLECTED',
+  'IN_PROGRESS',
+  'PENDING_REVIEW',
+  'RESULTED',
+  'VERIFIED',
+  'RELEASED',
+  'CANCELLED',
+] as const;
+export type TestRequestStatus = (typeof TEST_REQUEST_STATUSES)[number];
+
+export const TEST_REQUEST_STATUS_LABELS: Record<TestRequestStatus, string> = {
+  RECEIVED: 'Received',
+  COLLECTED: 'Collected',
+  IN_PROGRESS: 'In progress',
+  PENDING_REVIEW: 'Pending review',
+  RESULTED: 'Resulted',
+  VERIFIED: 'Verified',
+  RELEASED: 'Released',
+  CANCELLED: 'Cancelled',
+};
+
+export const HAEMATOLOGY_SAMPLE_STATES = [
+  'COLLECTED',
+  'RECEIVED',
+  'ANALYSING',
+  'RESULTED',
+  'VERIFIED',
+  'RELEASED',
+  'REJECTED',
+  'RERUN_REQUESTED',
+] as const;
+export type HaematologySampleState = (typeof HAEMATOLOGY_SAMPLE_STATES)[number];
+
+export const CHEMISTRY_SAMPLE_STATES = HAEMATOLOGY_SAMPLE_STATES;
+export type ChemistrySampleState = (typeof CHEMISTRY_SAMPLE_STATES)[number];
+
+export const MICROBIOLOGY_CULTURE_STATES = [
+  'RECEIVED',
+  'PLATED',
+  'INCUBATING',
+  'READ',
+  'ID_DONE',
+  'AST_DONE',
+  'REPORTED',
+  'REJECTED',
+] as const;
+export type MicrobiologyCultureState = (typeof MICROBIOLOGY_CULTURE_STATES)[number];
+
+export const DISCIPLINE_STATE_LABELS: Record<string, string> = {
+  COLLECTED: 'Collected',
+  RECEIVED: 'Received',
+  ANALYSING: 'Analysing',
+  RESULTED: 'Resulted',
+  VERIFIED: 'Verified',
+  RELEASED: 'Released',
+  REJECTED: 'Rejected',
+  RERUN_REQUESTED: 'Rerun requested',
+  PLATED: 'Plated',
+  INCUBATING: 'Incubating',
+  READ: 'Read',
+  ID_DONE: 'Identification done',
+  AST_DONE: 'Susceptibility done',
+  REPORTED: 'Reported',
+};
+
+/** All roles that are scoped to one or more disciplines. */
+export const CLINICAL_ROLES = ['GROSSER', 'TECHNOLOGIST', 'SCIENTIST', 'PATHOLOGIST'] as const;
+export type ClinicalRole = (typeof CLINICAL_ROLES)[number];
+
+export function isClinicalRole(role: Role): role is ClinicalRole {
+  return (CLINICAL_ROLES as readonly string[]).includes(role);
+}

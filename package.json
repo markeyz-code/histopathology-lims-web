@@ -2,7 +2,7 @@
   "name": "histopathology-lims",
   "version": "1.0.0",
   "private": true,
-  "description": "A block-and-slide level Laboratory Information Management System for hospital histopathology departments.",
+  "description": "Multi-discipline laboratory information management system",
   "license": "UNLICENSED",
   "packageManager": "pnpm@12.11.2",
   "engines": {
@@ -33,7 +33,9 @@
     "db:up": "docker compose up -d mongo mongo-init redis",
     "db:down": "docker compose stop mongo redis",
     "docker:seed": "docker compose --profile tools run --rm seed",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:e2e && pnpm build"
+    "verify": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:e2e && pnpm build",
+    "migrate:phase15": "pnpm --filter @lims/api migrate:phase15",
+    "migrate:phase15:prod": "pnpm --filter @lims/api migrate:phase15:dist"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

@@ -1,36 +1,31 @@
 import {
-  specimenLetter,
   type AuditLog as AuditLogDto,
-  type Block as BlockDto,
   type CaseListItem,
   type CustodyEvent as CustodyEventDto,
   type Lab as LabDto,
   type Patient as PatientDto,
   type PatientSummary,
-  type Protocol,
   type ProtocolContent,
   type ReportCoding,
   type ReportDetail,
   type ReportSummary,
   type ReportVersion as ReportVersionDto,
-  type Slide as SlideDto,
   type Specimen as SpecimenDto,
+  type TestRequest as TestRequestDto,
   type WsiInfo,
   type User as UserDto,
   type UserSummary,
 } from '@lims/shared';
-import type { AuditLogEntity } from '../../modules/audit/audit-log.schema';
-import type { BlockEntity } from '../../modules/blocks/block.schema';
-import type { CaseEntity } from '../../modules/cases/case.schema';
-import type { CustodyEventEntity } from '../../modules/custody/custody-event.schema';
-import type { LabEntity } from '../../modules/labs/lab.schema';
-import type { PatientEntity } from '../../modules/patients/patient.schema';
-import type { ProtocolEntity } from '../../modules/protocols/protocol.schema';
-import type { ReportVersionEntity } from '../../modules/reports/report-version.schema';
-import type { ReportEntity } from '../../modules/reports/report.schema';
-import type { SlideEntity } from '../../modules/slides/slide.schema';
-import type { SpecimenEntity } from '../../modules/specimens/specimen.schema';
-import type { UserEntity } from '../../modules/users/user.schema';
+import type { AuditLogEntity } from '../../core/audit/audit-log.schema';
+import type { CaseEntity } from '../../core/cases/case.schema';
+import type { CustodyEventEntity } from '../../core/custody/custody-event.schema';
+import type { LabEntity } from '../../core/labs/lab.schema';
+import type { PatientEntity } from '../../core/patients/patient.schema';
+import type { ReportVersionEntity } from '../../core/reports/report-version.schema';
+import type { ReportEntity } from '../../core/reports/report.schema';
+import type { SpecimenEntity } from '../../core/specimens/specimen.schema';
+import type { TestRequestEntity } from '../../core/test-requests/test-request.schema';
+import type { UserEntity } from '../../core/users/user.schema';
 import { toIso } from '../utils/format';
 
 export function toUserSummary(user: UserEntity): UserSummary {
@@ -40,6 +35,7 @@ export function toUserSummary(user: UserEntity): UserSummary {
     email: user.email,
     role: user.role,
     subspecialties: [...user.subspecialties],
+    disciplines: [...(user.disciplines ?? [])],
   };
 }
 
@@ -50,6 +46,22 @@ export function toUser(user: UserEntity): UserDto {
     active: user.active,
     lastLoginAt: toIso(user.lastLoginAt),
     createdAt: toIso(user.createdAt) ?? new Date().toISOString(),
+  };
+}
+
+export function toTestRequest(request: TestRequestEntity): TestRequestDto {
+  return {
+    id: request._id.toString(),
+    caseId: request.caseId.toString(),
+    accessionNumber: request.accessionNumber,
+    discipline: request.discipline,
+    code: request.code,
+    name: request.name,
+    status: request.status,
+    priority: request.priority,
+    requestedAt: toIso(request.requestedAt) ?? new Date().toISOString(),
+    createdAt: toIso(request.createdAt) ?? new Date().toISOString(),
+    updatedAt: toIso(request.updatedAt) ?? new Date().toISOString(),
   };
 }
 
@@ -72,6 +84,8 @@ export function toLab(lab: LabEntity): LabDto {
     timezone: lab.timezone ?? 'Africa/Lagos',
     qaSamplingPercent: lab.qaSamplingPercent ?? 10,
     currency: lab.currency ?? 'NGN',
+    enabledDisciplines: [...(lab.enabledDisciplines ?? ['HISTOPATHOLOGY'])],
+    accessionPrefixes: { ...(lab.accessionPrefixes ?? {}) },
     letterhead: {
       phone: lab.letterhead?.phone ?? null,
       email: lab.letterhead?.email ?? null,
@@ -143,51 +157,18 @@ export function toSpecimen(specimen: SpecimenEntity): SpecimenDto {
   };
 }
 
-export function toBlock(block: BlockEntity): BlockDto {
-  return {
-    id: block._id.toString(),
-    caseId: block.caseId.toString(),
-    specimenId: block.specimenId.toString(),
-    specimenLabel: specimenLetter(block.specimenSequence),
-    blockNumber: block.blockNumber,
-    label: block.label,
-    barcode: block.barcode,
-    grossDescription: block.grossDescription,
-    status: block.status,
-    currentStation: block.currentStation,
-    slideCount: block.slideCount,
-    lastEventAt: toIso(block.lastEventAt),
-    createdAt: toIso(block.createdAt) ?? new Date().toISOString(),
-  };
+interface WsiSlideLike {
+  wsiStatus?: string | null;
+  wsiUrl?: string | null;
+  wsiViewerUrl?: string | null;
+  wsiScanner?: string | null;
+  wsiMagnification?: string | null;
+  wsiAddedAt?: Date | null;
+  wsiAddedBy?: { toString(): string } | null;
+  wsiMetadata?: Record<string, unknown> | null;
 }
 
-export { toSlide as ToSlide };
-
-export function toSlide(slide: SlideEntity): SlideDto {
-  return {
-    id: slide._id.toString(),
-    caseId: slide.caseId.toString(),
-    specimenId: slide.specimenId.toString(),
-    blockId: slide.blockId.toString(),
-    blockLabel: slide.blockLabel,
-    slideNumber: slide.slideNumber,
-    label: slide.label,
-    barcode: slide.barcode,
-    stainType: slide.stainType,
-    specialStain: slide.specialStain,
-    status: slide.status,
-    currentStation: slide.currentStation,
-    recutOfSlideId: slide.recutOfSlideId ? slide.recutOfSlideId.toString() : null,
-    requestReason: slide.requestReason,
-    notes: slide.notes,
-    stainRunId: slide.stainRunId ? slide.stainRunId.toString() : null,
-    wsi: toWsiInfo(slide),
-    lastEventAt: toIso(slide.lastEventAt),
-    createdAt: toIso(slide.createdAt) ?? new Date().toISOString(),
-  };
-}
-
-export function toWsiInfo(slide: SlideEntity): WsiInfo | null {
+export function toWsiInfo(slide: WsiSlideLike): WsiInfo | null {
   if (!slide.wsiStatus) return null;
   return {
     status: slide.wsiStatus as WsiInfo['status'],
@@ -217,21 +198,6 @@ export function toCustodyEvent(event: CustodyEventEntity): CustodyEventDto {
     userRole: event.userRole ?? 'TECHNOLOGIST',
     timestamp: toIso(event.timestamp) ?? new Date().toISOString(),
     metadata: (event.metadata ?? {}) as Record<string, unknown>,
-  };
-}
-
-export function toProtocol(protocol: ProtocolEntity): Protocol {
-  return {
-    id: protocol._id.toString(),
-    key: protocol.key,
-    title: protocol.title,
-    cancerType: protocol.cancerType,
-    subspecialty: protocol.subspecialty,
-    version: protocol.version,
-    active: protocol.active,
-    content: protocol.content,
-    createdAt: toIso(protocol.createdAt) ?? new Date().toISOString(),
-    updatedAt: toIso(protocol.updatedAt) ?? new Date().toISOString(),
   };
 }
 
@@ -314,10 +280,12 @@ export function toCaseListItem(
   patient: PatientEntity,
   pathologist: UserEntity | null,
   report: ReportEntity | null,
+  disciplines: CaseListItem['disciplines'] = ['HISTOPATHOLOGY'],
 ): CaseListItem {
   return {
     id: caseDoc._id.toString(),
     accessionNumber: caseDoc.accessionNumber,
+    disciplines,
     patient: toPatientSummary(patient),
     priority: caseDoc.priority,
     priorityRank: caseDoc.priorityRank,

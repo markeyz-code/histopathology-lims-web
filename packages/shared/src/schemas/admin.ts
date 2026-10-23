@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AUDIT_ACTIONS, ROLES } from '../constants';
+import { AUDIT_ACTIONS, DISCIPLINES, ROLES } from '../constants';
 import { validateAccessionFormat } from '../formats';
 import { objectIdSchema } from './common';
 
@@ -25,6 +25,7 @@ export const createUserSchema = z.object({
     .regex(/\d/, 'Include a number.'),
   role: z.enum(ROLES),
   phone: optionalTrimmed(40),
+  disciplines: z.array(z.enum(DISCIPLINES)).max(4).optional(),
   subspecialties: z.array(z.string().trim().max(80)).max(20).default([]),
 });
 export type CreateUserInput = z.infer<typeof createUserSchema>;
@@ -33,6 +34,7 @@ export const updateUserSchema = z.object({
   name: z.string().trim().min(2).max(150).optional(),
   role: z.enum(ROLES).optional(),
   phone: optionalTrimmed(40),
+  disciplines: z.array(z.enum(DISCIPLINES)).max(4).optional(),
   active: z.boolean().optional(),
   subspecialties: z.array(z.string().trim().max(80)).max(20).optional(),
 });
@@ -53,6 +55,7 @@ export const userListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   role: z.enum(ROLES).optional(),
   phone: optionalTrimmed(40),
+  disciplines: z.array(z.enum(DISCIPLINES)).max(4).optional(),
   active: z
     .enum(['true', 'false'])
     .optional()
@@ -107,6 +110,8 @@ export const updateLabSchema = z.object({
   tatWarningPercent: z.coerce.number().int().min(50).max(95).optional(),
   timezone: z.string().trim().max(80).optional(),
   qaSamplingPercent: z.coerce.number().int().min(0).max(100).optional(),
+  enabledDisciplines: z.array(z.enum(DISCIPLINES)).min(1).max(4).optional(),
+  accessionPrefixes: z.record(z.enum(DISCIPLINES), z.string().trim().max(8)).optional(),
   currency: z.string().trim().length(3).optional(),
   letterhead: letterheadSchema.optional(),
 });

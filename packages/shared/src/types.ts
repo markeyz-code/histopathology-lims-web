@@ -2,6 +2,7 @@ import type {
   AuditAction,
   CaseStatus,
   CodingSystem,
+  Discipline,
   InvoiceStatus,
   Laterality,
   LotValidationStatus,
@@ -22,6 +23,7 @@ import type {
   QaSeverity,
   ReportStatus,
   Role,
+  TestRequestStatus,
   Sex,
   StainQcResult,
   StainRunStatus,
@@ -38,6 +40,7 @@ export interface UserSummary {
   email: string;
   role: Role;
   subspecialties: string[];
+  disciplines: Discipline[];
 }
 
 export interface User extends UserSummary {
@@ -73,6 +76,8 @@ export interface Lab {
   letterhead: Letterhead;
   qaSamplingPercent: number;
   currency: string;
+  enabledDisciplines: Discipline[];
+  accessionPrefixes: Partial<Record<Discipline, string>>;
   active: boolean;
   createdAt: string;
 }
@@ -265,6 +270,7 @@ export interface CaseSummaryCounts {
 export interface CaseListItem {
   id: string;
   accessionNumber: string;
+  disciplines: Discipline[];
   patient: PatientSummary;
   priority: Priority;
   priorityRank: number;
@@ -282,10 +288,25 @@ export interface CaseListItem {
   createdAt: string;
 }
 
+export interface TestRequest {
+  id: string;
+  caseId: string;
+  accessionNumber: string;
+  discipline: Discipline;
+  code: string;
+  name: string;
+  status: TestRequestStatus;
+  priority: Priority;
+  requestedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CaseDetail extends CaseListItem {
   clinicalHistory: string;
   clinicalDiagnosis: string | null;
   specimens: Specimen[];
+  testRequests: TestRequest[];
   blocks: Block[];
   slides: Slide[];
   custodyEvents: CustodyEvent[];
@@ -308,6 +329,7 @@ export interface Protocol {
 
 export interface WorklistItem {
   case: CaseListItem;
+  testRequests: TestRequest[];
   totalSlides: number;
   pendingSlides: number;
   stainedSlides: number;

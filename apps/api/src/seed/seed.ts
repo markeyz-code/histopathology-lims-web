@@ -3,6 +3,7 @@ import {
   PRIORITY_RANK,
   formatAccession,
   formatMrn,
+  isClinicalRole,
   generateNarrative,
   protocolContentSchema,
   reportCompleteness,
@@ -17,47 +18,56 @@ import {
   type StainType,
   type Station,
 } from '@lims/shared';
-import { LabModelName, LabSchema, type LabEntity } from '../modules/labs/lab.schema';
-import { UserModelName, UserSchema, type UserEntity } from '../modules/users/user.schema';
+import { LabModelName, LabSchema, type LabEntity } from '../core/labs/lab.schema';
+import { TestRequestModelName, TestRequestSchema } from '../core/test-requests/test-request.schema';
+import { UserModelName, UserSchema, type UserEntity } from '../core/users/user.schema';
 import {
   PatientModelName,
   PatientSchema,
   type PatientEntity,
-} from '../modules/patients/patient.schema';
-import { CaseModelName, CaseSchema, type CaseEntity } from '../modules/cases/case.schema';
+} from '../core/patients/patient.schema';
+import { CaseModelName, CaseSchema, type CaseEntity } from '../core/cases/case.schema';
 import {
   SpecimenModelName,
   SpecimenSchema,
   type SpecimenEntity,
-} from '../modules/specimens/specimen.schema';
-import { BlockModelName, BlockSchema, type BlockEntity } from '../modules/blocks/block.schema';
-import { SlideModelName, SlideSchema, type SlideEntity } from '../modules/slides/slide.schema';
+} from '../core/specimens/specimen.schema';
+import {
+  BlockModelName,
+  BlockSchema,
+  type BlockEntity,
+} from '../disciplines/histopathology/blocks/block.schema';
+import {
+  SlideModelName,
+  SlideSchema,
+  type SlideEntity,
+} from '../disciplines/histopathology/slides/slide.schema';
 import {
   CustodyEventModelName,
   CustodyEventSchema,
   type CustodyEventEntity,
-} from '../modules/custody/custody-event.schema';
-import { ReportModelName, ReportSchema, type ReportEntity } from '../modules/reports/report.schema';
+} from '../core/custody/custody-event.schema';
+import { ReportModelName, ReportSchema, type ReportEntity } from '../core/reports/report.schema';
 import {
   ReportVersionModelName,
   ReportVersionSchema,
   type ReportVersionEntity,
-} from '../modules/reports/report-version.schema';
+} from '../core/reports/report-version.schema';
 import {
   ProtocolModelName,
   ProtocolSchema,
   type ProtocolEntity,
-} from '../modules/protocols/protocol.schema';
+} from '../disciplines/histopathology/protocols/protocol.schema';
 import {
   AuditLogModelName,
   AuditLogSchema,
   type AuditLogEntity,
-} from '../modules/audit/audit-log.schema';
+} from '../core/audit/audit-log.schema';
 import {
   NotificationModelName,
   NotificationSchema,
   type NotificationEntity,
-} from '../modules/notifications/notification.schema';
+} from '../core/notifications/notification.schema';
 import { runWithSystemTenant } from '../common/context/tenant-context';
 import { seedPhase23 } from './phase23-seed';
 import { hashPassword } from '../common/utils/crypto';
@@ -688,6 +698,7 @@ export async function seedDatabase(): Promise<void> {
     ReportVersionSchema,
   );
   const ProtocolModel = connection.model<ProtocolEntity>(ProtocolModelName, ProtocolSchema);
+  const TestRequestModel = connection.model(TestRequestModelName, TestRequestSchema);
   const AuditModel = connection.model<AuditLogEntity>(AuditLogModelName, AuditLogSchema);
   const NotificationModel = connection.model<NotificationEntity>(
     NotificationModelName,
@@ -723,6 +734,8 @@ export async function seedDatabase(): Promise<void> {
     timezone: 'Africa/Lagos',
     qaSamplingPercent: 15,
     currency: 'NGN',
+    enabledDisciplines: ['HISTOPATHOLOGY', 'HAEMATOLOGY', 'CHEMICAL_PATHOLOGY', 'MICROBIOLOGY'],
+    accessionPrefixes: {},
     letterhead: {
       phone: '+234 802 555 0198',
       email: 'reports@lagoscentralhisto.ng',
@@ -757,6 +770,9 @@ export async function seedDatabase(): Promise<void> {
       role: Role;
       subspecialties: string[];
       phone?: string;
+      disciplines?: readonly (
+        'HISTOPATHOLOGY' | 'HAEMATOLOGY' | 'CHEMICAL_PATHOLOGY' | 'MICROBIOLOGY'
+      )[];
     }[] = [
       {
         key: 'super',
@@ -789,6 +805,23 @@ export async function seedDatabase(): Promise<void> {
         password: 'Grosser#2026',
         role: 'GROSSER',
         subspecialties: [],
+      },
+      {
+        key: 'phleb',
+        name: 'Amina Yusuf',
+        email: 'phlebotomist@histo.ng',
+        password: 'Phlebotomist#2026',
+        role: 'PHLEBOTOMIST',
+        subspecialties: [],
+      },
+      {
+        key: 'scientist',
+        name: 'Tunde Balogun',
+        email: 'scientist@histo.ng',
+        password: 'Scientist#2026',
+        role: 'SCIENTIST',
+        subspecialties: [],
+        disciplines: ['HAEMATOLOGY', 'CHEMICAL_PATHOLOGY'] as const,
       },
       {
         key: 'tech',
@@ -835,6 +868,9 @@ export async function seedDatabase(): Promise<void> {
         role: definition.role,
         phone: definition.phone ?? null,
         subspecialties: definition.subspecialties,
+        disciplines:
+          definition.disciplines ??
+          (isClinicalRole(definition.role) ? (['HISTOPATHOLOGY'] as const) : []),
         active: true,
       });
       users[definition.key] = user;
@@ -995,6 +1031,29 @@ export async function seedDatabase(): Promise<void> {
               : receivedAt,
         createdAt: receivedAt,
         updatedAt: now,
+      });
+
+      const testRequestStatus =
+        caseStatus === 'PENDING_REVIEW'
+          ? 'PENDING_REVIEW'
+          : caseStatus === 'REPORTED'
+            ? 'VERIFIED'
+            : caseStatus === 'AMENDED'
+              ? 'VERIFIED'
+              : caseStatus === 'IN_PROGRESS'
+                ? 'IN_PROGRESS'
+                : 'RECEIVED';
+      await TestRequestModel.create({
+        labId,
+        caseId: caseDoc._id,
+        accessionNumber,
+        discipline: 'HISTOPATHOLOGY',
+        code: 'HISTO',
+        name: 'Histopathology examination',
+        status: testRequestStatus,
+        priority: seed.priority,
+        requestedBy: users.reception?._id ?? null,
+        requestedAt: receivedAt,
       });
 
       audits.push({
