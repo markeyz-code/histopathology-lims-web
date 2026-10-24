@@ -254,6 +254,7 @@ export const CAPABILITIES = [
   'results',
   'verification',
   'disciplines',
+  'qc',
 ] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
@@ -280,6 +281,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'results',
     'verification',
     'disciplines',
+    'qc',
   ],
   RECEPTIONIST: ['dashboard', 'accession', 'cases', 'locator', 'labels', 'billing', 'collection'],
   PHLEBOTOMIST: ['dashboard', 'cases', 'locator', 'labels', 'collection'],
@@ -293,6 +295,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'labels',
     'inventory',
     'results',
+    'qc',
   ],
   SCIENTIST: [
     'dashboard',
@@ -303,6 +306,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'labels',
     'results',
     'verification',
+    'qc',
   ],
   PATHOLOGIST: [
     'dashboard',
@@ -317,6 +321,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'results',
     'verification',
     'disciplines',
+    'qc',
   ],
   REFERRER: ['referrer'],
 };
@@ -667,3 +672,79 @@ export type ClinicalRole = (typeof CLINICAL_ROLES)[number];
 export function isClinicalRole(role: Role): role is ClinicalRole {
   return (CLINICAL_ROLES as readonly string[]).includes(role);
 }
+
+// ─────────────────────────────────────────────────────────────
+// Phase 2 — results, catalogue, rules and QC
+// ─────────────────────────────────────────────────────────────
+
+export const RESULT_TYPES = ['NUMERIC', 'CODED', 'TEXT', 'CALCULATED'] as const;
+export type ResultType = (typeof RESULT_TYPES)[number];
+
+export const RESULT_STATUSES = ['DRAFT', 'RESULTED', 'VERIFIED', 'RELEASED', 'CANCELLED'] as const;
+export type ResultStatus = (typeof RESULT_STATUSES)[number];
+
+export const RESULT_STATUS_LABELS: Record<ResultStatus, string> = {
+  DRAFT: 'Draft',
+  RESULTED: 'Resulted',
+  VERIFIED: 'Verified',
+  RELEASED: 'Released',
+  CANCELLED: 'Cancelled',
+};
+
+export const RESULT_FLAGS = [
+  'NORMAL',
+  'LOW',
+  'HIGH',
+  'CRITICAL_LOW',
+  'CRITICAL_HIGH',
+  'ABNORMAL',
+] as const;
+export type ResultFlag = (typeof RESULT_FLAGS)[number];
+
+export const RESULT_FLAG_LABELS: Record<ResultFlag, string> = {
+  NORMAL: 'Normal',
+  LOW: 'Low',
+  HIGH: 'High',
+  CRITICAL_LOW: 'Critical low',
+  CRITICAL_HIGH: 'Critical high',
+  ABNORMAL: 'Abnormal',
+};
+
+export const RULE_TRIGGERS = ['RESULT_SAVE', 'RESULT_VERIFY', 'RESULT_RELEASE'] as const;
+export type RuleTrigger = (typeof RULE_TRIGGERS)[number];
+
+export const RULE_ACTIONS = [
+  'AUTO_VERIFY',
+  'CRITICAL_ALERT',
+  'REFLEX_TEST',
+  'DELTA_CHECK',
+  'CASCADE_ANTIBIOTIC',
+  'REQUIRE_REVIEW',
+] as const;
+export type RuleAction = (typeof RULE_ACTIONS)[number];
+
+export const RULE_ACTION_LABELS: Record<RuleAction, string> = {
+  AUTO_VERIFY: 'Auto-verify',
+  CRITICAL_ALERT: 'Critical-value alert',
+  REFLEX_TEST: 'Reflex test',
+  DELTA_CHECK: 'Delta check',
+  CASCADE_ANTIBIOTIC: 'Cascade antibiotic',
+  REQUIRE_REVIEW: 'Require review',
+};
+
+export const WESTGARD_RULES = ['1_3S', '2_2S', 'R_4S', '4_1S', '10X'] as const;
+export type WestgardRule = (typeof WESTGARD_RULES)[number];
+
+export const WESTGARD_RULE_LABELS: Record<WestgardRule, string> = {
+  '1_3S': '1₃s — one point beyond 3 SD',
+  '2_2S': '2₂s — two consecutive beyond 2 SD, same side',
+  R_4S: 'R₄s — range between two points exceeds 4 SD',
+  '4_1S': '4₁s — four consecutive beyond 1 SD, same side',
+  '10X': '10x — ten consecutive on one side of the mean',
+};
+
+export const QC_STATUSES = ['ACCEPTED', 'WARNING', 'REJECTED'] as const;
+export type QcStatus = (typeof QC_STATUSES)[number];
+
+export const QC_LEVELS = ['LOW', 'NORMAL', 'HIGH'] as const;
+export type QcLevel = (typeof QC_LEVELS)[number];

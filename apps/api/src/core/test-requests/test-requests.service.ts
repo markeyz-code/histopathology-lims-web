@@ -111,6 +111,19 @@ export class TestRequestsService {
     await this.model.updateMany({ caseId }, { $set: { status: 'RELEASED' } }, { session }).exec();
   }
 
+  async findEntity(id: string): Promise<TestRequestEntity | null> {
+    if (!Types.ObjectId.isValid(id)) return null;
+    return this.model.findById(id).exec();
+  }
+
+  async setStatus(
+    id: Types.ObjectId,
+    status: TestRequestEntity['status'],
+    session?: ClientSession,
+  ): Promise<void> {
+    await this.model.updateOne({ _id: id }, { $set: { status } }, { session }).exec();
+  }
+
   async ensureHistopathology(caseId: string): Promise<TestRequest> {
     const caseDoc = await this.caseModel.findById(caseId).exec();
     if (!caseDoc) throw new NotFoundException('Case not found.');

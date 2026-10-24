@@ -6,6 +6,7 @@ import {
   formatMrn,
   validateAccessionFormat,
   type Discipline,
+  DISCIPLINE_ACCESSION_PREFIXES,
   type Lab as LabDto,
 } from '@lims/shared';
 import { withTransaction } from '../../common/utils/transaction';
@@ -64,7 +65,11 @@ export class LabsService {
     const counterKey =
       discipline === 'HISTOPATHOLOGY' ? String(year) : `${discipline.toLowerCase()}-${year}`;
     const sequence = await this.nextSequence(labId, counterKey, session);
-    const prefix = lab.accessionPrefixes?.[discipline] ?? lab.accessionPrefix;
+    const prefix =
+      lab.accessionPrefixes?.[discipline] ??
+      (discipline === 'HISTOPATHOLOGY'
+        ? lab.accessionPrefix
+        : DISCIPLINE_ACCESSION_PREFIXES[discipline]);
     const accessionNumber = formatAccession(lab.accessionFormat, {
       prefix,
       year,

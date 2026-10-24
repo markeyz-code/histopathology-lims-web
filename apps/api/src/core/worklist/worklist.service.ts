@@ -37,6 +37,14 @@ export class WorklistService {
     if (query.discipline) {
       const caseIds = await this.testRequests.caseIdsForDiscipline(query.discipline);
       filter._id = { $in: caseIds };
+    } else {
+      const allowed = this.clinicalDisciplines(user);
+      if (allowed.length > 0) {
+        const caseIdSets = await Promise.all(
+          allowed.map((discipline) => this.testRequests.caseIdsForDiscipline(discipline)),
+        );
+        filter._id = { $in: caseIdSets.flat() };
+      }
     }
     if (assigned === 'me') {
       filter.assignedPathologistId = new Types.ObjectId(user.id);
@@ -91,5 +99,13 @@ export class WorklistService {
         awaitingReview: items.filter((item) => item.pendingSlides > 0).length,
       },
     };
+  }
+
+  private clinicalDisciplines(user: AuthenticatedUser) {
+    if (user.role === 'SUPER_ADMIN' || user.role === 'LAB_ADMIN') return [];
+    if (user.role === 'PATHOLOGIST' || user.role === 'SCIENTIST' || user.role === 'TECHNOLOGIST') {
+      return user.disciplines.length > 0 ? user.disciplines : (['HISTOPATHOLOGY'] as const);
+    }
+    return [];
   }
 }

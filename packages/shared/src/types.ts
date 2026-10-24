@@ -4,6 +4,14 @@ import type {
   CodingSystem,
   Discipline,
   InvoiceStatus,
+  QcLevel,
+  QcStatus,
+  ResultFlag,
+  ResultStatus,
+  ResultType,
+  RuleAction,
+  RuleTrigger,
+  WestgardRule,
   Laterality,
   LotValidationStatus,
   PayerType,
@@ -716,4 +724,206 @@ export interface SyncMutationResult {
 export interface SyncBatchResult {
   results: SyncMutationResult[];
   syncedAt: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 2 — catalogue, results, rules and QC
+// ─────────────────────────────────────────────────────────────
+
+export interface ReferenceRange {
+  low: number | null;
+  high: number | null;
+  sex?: Sex | null;
+  minAge?: number | null;
+  maxAge?: number | null;
+}
+
+export interface AnalyteOption {
+  value: string;
+  label: string;
+}
+
+export interface AnalyteDefinition {
+  key: string;
+  name: string;
+  unit: string | null;
+  resultType: ResultType;
+  decimals?: number;
+  options?: AnalyteOption[];
+  referenceRanges: ReferenceRange[];
+  criticalLow?: number | null;
+  criticalHigh?: number | null;
+  formula?: string | null;
+  required?: boolean;
+}
+
+export interface TestDefinition {
+  id: string;
+  discipline: Discipline;
+  code: string;
+  name: string;
+  specimenType: string;
+  method: string | null;
+  analytes: AnalyteDefinition[];
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Panel {
+  id: string;
+  discipline: Discipline;
+  code: string;
+  name: string;
+  testCodes: string[];
+  active: boolean;
+}
+
+export interface ResultValue {
+  analyteKey: string;
+  analyteName?: string;
+  value: number | string | null;
+  unit: string | null;
+  flag: ResultFlag;
+  critical: boolean;
+  referenceText: string | null;
+}
+
+export interface ResultSet {
+  id: string;
+  caseId: string;
+  accessionNumber: string;
+  patientId: string;
+  patientName: string;
+  testRequestId: string;
+  discipline: Discipline;
+  testCode: string;
+  testName: string;
+  status: ResultStatus;
+  currentVersion: number;
+  values: ResultValue[];
+  comment: string | null;
+  critical: boolean;
+  criticalAcknowledgedAt: string | null;
+  criticalAcknowledgedBy: string | null;
+  enteredBy: UserSummary | null;
+  verifiedBy: UserSummary | null;
+  verifiedAt: string | null;
+  releasedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ResultVersion {
+  id: string;
+  resultSetId: string;
+  version: number;
+  action: 'DRAFT_SAVE' | 'RESULTED' | 'VERIFY' | 'RELEASE' | 'AMEND';
+  values: ResultValue[];
+  comment: string | null;
+  createdBy: UserSummary | null;
+  createdAt: string;
+}
+
+export interface RuleCondition {
+  field?: string;
+  op?: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'between' | 'contains' | 'exists';
+  value?: unknown;
+  all?: RuleCondition[];
+  any?: RuleCondition[];
+  not?: RuleCondition;
+}
+
+export interface RuleActionConfig {
+  type: RuleAction;
+  testCode?: string;
+  message?: string;
+  severity?: 'INFO' | 'WARNING' | 'CRITICAL';
+}
+
+export interface LabRule {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  discipline: Discipline;
+  testCodes: string[];
+  trigger: RuleTrigger;
+  priority: number;
+  active: boolean;
+  conditions: RuleCondition;
+  actions: RuleActionConfig[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RuleExecution {
+  id: string;
+  ruleId: string;
+  ruleCode: string;
+  ruleName: string;
+  resultSetId: string;
+  caseId: string;
+  trigger: RuleTrigger;
+  matched: boolean;
+  actions: string[];
+  message: string | null;
+  createdAt: string;
+}
+
+export interface QcMaterial {
+  id: string;
+  discipline: Discipline;
+  name: string;
+  lotNumber: string;
+  level: QcLevel;
+  testCode: string;
+  analyteKey: string;
+  targetMean: number;
+  targetSd: number;
+  unit: string | null;
+  active: boolean;
+}
+
+export interface QcPoint {
+  value: number;
+  z: number;
+}
+
+export interface QcRun {
+  id: string;
+  materialId: string;
+  materialName: string;
+  testCode: string;
+  analyteKey: string;
+  mean: number;
+  sd: number;
+  values: number[];
+  points: QcPoint[];
+  status: QcStatus;
+  violations: Array<{ rule: WestgardRule; message: string }>;
+  performedBy: UserSummary | null;
+  createdAt: string;
+}
+
+export interface ResultWorklistItem {
+  testRequest: TestRequest;
+  result: ResultSet | null;
+  testDefinition: TestDefinition | null;
+}
+
+export interface CumulativeResult {
+  testCode: string;
+  testName: string;
+  discipline: Discipline;
+  latest: ResultSet;
+  history: ResultSet[];
+}
+
+export interface CumulativeReport {
+  patient: PatientSummary;
+  from: string;
+  to: string;
+  disciplines: Discipline[];
+  results: CumulativeResult[];
 }

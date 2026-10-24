@@ -19,6 +19,10 @@ import { AuditModule } from './core/audit/audit.module';
 import { AuthModule } from './core/auth/auth.module';
 import { BillingModule } from './extensions/billing/billing.module';
 import { TestRequestsModule } from './core/test-requests/test-requests.module';
+import { CatalogModule } from './core/catalog/catalog.module';
+import { ResultsModule } from './core/results/results.module';
+import { RulesModule } from './core/rules/rules.module';
+import { QcModule } from './core/qc/qc.module';
 import { DisciplineRegistryModule } from './core/discipline/discipline.module';
 import { DisciplineGuard } from './core/discipline/discipline.guard';
 import { DisciplinesModule } from './disciplines/disciplines.module';
@@ -121,6 +125,10 @@ import { WsiModule } from './extensions/wsi/wsi.module';
     AuditModule,
     BillingModule,
     TestRequestsModule,
+    CatalogModule,
+    RulesModule,
+    QcModule,
+    ResultsModule,
     DisciplineRegistryModule,
     DisciplinesModule,
     HistopathologyModule,

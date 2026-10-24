@@ -104,6 +104,10 @@ async function bootstrap(): Promise<void> {
       .addTag('FHIR R4')
       .addTag('HL7 v2')
       .addTag('Offline sync')
+      .addTag('Results')
+      .addTag('Rules')
+      .addTag('Quality control')
+      .addTag('Test catalogue')
       .build();
     const document = SwaggerModule.createDocument(app, swaggerConfig, {
       deepScanRoutes: true,

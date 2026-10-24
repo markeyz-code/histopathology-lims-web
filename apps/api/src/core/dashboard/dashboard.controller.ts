@@ -14,7 +14,16 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get()
-  @Roles('SUPER_ADMIN', 'LAB_ADMIN', 'RECEPTIONIST', 'GROSSER', 'TECHNOLOGIST', 'PATHOLOGIST')
+  @Roles(
+    'SUPER_ADMIN',
+    'LAB_ADMIN',
+    'RECEPTIONIST',
+    'PHLEBOTOMIST',
+    'GROSSER',
+    'TECHNOLOGIST',
+    'SCIENTIST',
+    'PATHOLOGIST',
+  )
   @ApiOperation({ summary: 'Case counts, stage TAT, overdue alerts and pathologist workload' })
   get(
     @Query() query: DashboardQueryDto,

@@ -20,3 +20,7 @@ export * from './schemas/billing';
 export * from './schemas/interop';
 export * from './schemas/sync';
 export * from './schemas/discipline';
+export * from './schemas/catalog';
+export * from './schemas/results';
+export * from './schemas/rules';
+export * from './schemas/qc';

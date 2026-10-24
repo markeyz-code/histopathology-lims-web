@@ -70,6 +70,7 @@ import {
 } from '../core/notifications/notification.schema';
 import { runWithSystemTenant } from '../common/context/tenant-context';
 import { seedPhase23 } from './phase23-seed';
+import { seedPhase2 } from './phase2-seed';
 import { hashPassword } from '../common/utils/crypto';
 import {
   breastProtocol,
@@ -846,6 +847,7 @@ export async function seedDatabase(): Promise<void> {
         password: 'Pathologist#2026',
         role: 'PATHOLOGIST',
         subspecialties: ['Urology', 'Gynaecology'],
+        disciplines: ['HISTOPATHOLOGY', 'HAEMATOLOGY', 'CHEMICAL_PATHOLOGY'],
       },
       {
         key: 'referrer',
@@ -1772,6 +1774,7 @@ export async function seedDatabase(): Promise<void> {
     }
 
     await seedPhase23(connection, labId, users, year);
+    await seedPhase2(connection, lab, now);
     lab.accessionCounters.set(`invoice-${year}`, 9);
 
     for (const event of custodyEvents) {
