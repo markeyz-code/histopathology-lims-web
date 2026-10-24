@@ -6,7 +6,12 @@ import type {
   AstInterpretation,
   AstMethod,
   BreakpointStandard,
+  CapaStatus,
   ConsignmentStatus,
+  EquipmentStatus,
+  NcSeverity,
+  NcStatus,
+  SendOutStatus,
   OrganismGram,
   InvoiceStatus,
   QcLevel,
@@ -1066,4 +1071,79 @@ export interface AntibiogramRow {
   intermediate: number;
   resistant: number;
   susceptibilityPercent: number;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 5 — quality management and send-outs
+// ─────────────────────────────────────────────────────────────
+
+export interface Equipment {
+  id: string;
+  code: string;
+  name: string;
+  type: string;
+  serialNumber: string | null;
+  location: string | null;
+  status: EquipmentStatus;
+  lastCalibrationAt: string | null;
+  nextCalibrationAt: string | null;
+  active: boolean;
+}
+
+export interface TemperatureLog {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  temperature: number;
+  unit: string;
+  minAllowed: number | null;
+  maxAllowed: number | null;
+  inRange: boolean;
+  recordedBy: UserSummary | null;
+  recordedAt: string;
+  notes: string | null;
+}
+
+export interface CapaAction {
+  id: string;
+  action: string;
+  owner: string | null;
+  dueAt: string | null;
+  status: CapaStatus;
+  completedAt: string | null;
+}
+
+export interface NonConformance {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  category: string;
+  severity: NcSeverity;
+  status: NcStatus;
+  reportedBy: UserSummary | null;
+  assignedTo: UserSummary | null;
+  dueAt: string | null;
+  rootCause: string | null;
+  actions: CapaAction[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SendOut {
+  id: string;
+  caseId: string;
+  accessionNumber: string;
+  testRequestId: string;
+  testName: string;
+  referenceLab: string;
+  reason: string | null;
+  courier: string | null;
+  trackingNumber: string | null;
+  status: SendOutStatus;
+  sentAt: string | null;
+  receivedAt: string | null;
+  reportedAt: string | null;
+  resultSummary: string | null;
+  createdAt: string;
 }

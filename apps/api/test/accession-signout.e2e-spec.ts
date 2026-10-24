@@ -1416,12 +1416,105 @@ describe('Accession to sign-out (e2e)', () => {
     expect(whonet.text).toContain('AMP');
   });
 
+  it('records equipment temperature, CAPA and a cross-lab send-out', async () => {
+    const equipment = await request(http)
+      .post('/api/quality/equipment')
+      .set(auth(tokens.admin))
+      .send({
+        code: `FR-${unique}`,
+        name: 'E2E Refrigerator',
+        type: 'Refrigerator',
+        location: 'Main lab',
+      })
+      .expect(201);
+    const temperature = await request(http)
+      .post(`/api/quality/equipment/${equipment.body.id}/temperature`)
+      .set(auth(tokens.technologist))
+      .send({
+        temperature: 9.4,
+        minAllowed: 2,
+        maxAllowed: 8,
+        unit: '°C',
+        notes: 'Door alarm test',
+      })
+      .expect(201);
+    expect(temperature.body.inRange).toBe(false);
+    const nc = await request(http)
+      .post('/api/quality/nonconformances')
+      .set(auth(tokens.pathologist))
+      .send({
+        title: 'E2E temperature excursion',
+        description: 'Refrigerator exceeded 8°C during monitoring.',
+        category: 'Equipment',
+        severity: 'MAJOR',
+      })
+      .expect(201);
+    expect(nc.body.status).toBe('OPEN');
+    const capa = await request(http)
+      .post(`/api/quality/nonconformances/${nc.body.id}/capa`)
+      .set(auth(tokens.pathologist))
+      .send({
+        action: 'Replace the door seal and revalidate.',
+        owner: 'Lab manager',
+        status: 'IN_PROGRESS',
+      })
+      .expect(201);
+    expect(capa.body.status).toBe('IN_PROGRESS');
+
+    const accession = await request(http)
+      .post('/api/cases/accession')
+      .set(auth(tokens.receptionist))
+      .send({
+        patient: {
+          firstName: 'Send',
+          lastName: 'Out',
+          sex: 'FEMALE',
+          age: 49,
+          mrn: `P5-${unique}`,
+        },
+        referringClinician: { name: 'Dr Phase Five', email: users.referrer },
+        clinicalHistory: 'Confirmatory testing required.',
+        priority: 'ROUTINE',
+        discipline: 'CHEMICAL_PATHOLOGY',
+        testCode: 'LFT',
+        specimens: [{ specimenType: 'Serum', site: 'Antecubital fossa' }],
+      })
+      .expect(201);
+    const sendOut = await request(http)
+      .post('/api/quality/send-outs')
+      .set(auth(tokens.technologist))
+      .send({
+        testRequestId: accession.body.testRequests[0].id,
+        referenceLab: 'Reference Laboratory',
+        courier: 'E2E Courier',
+        trackingNumber: `TRK-${unique}`,
+      })
+      .expect(201);
+    expect(sendOut.body.status).toBe('SENT');
+    await request(http)
+      .patch(`/api/quality/send-outs/${sendOut.body.id}`)
+      .set(auth(tokens.technologist))
+      .send({ status: 'IN_TRANSIT' })
+      .expect(200);
+    await request(http)
+      .patch(`/api/quality/send-outs/${sendOut.body.id}`)
+      .set(auth(tokens.technologist))
+      .send({ status: 'RECEIVED' })
+      .expect(200);
+    const reported = await request(http)
+      .patch(`/api/quality/send-outs/${sendOut.body.id}`)
+      .set(auth(tokens.technologist))
+      .send({ status: 'REPORTED', resultSummary: 'External result received.' })
+      .expect(200);
+    expect(reported.body.status).toBe('REPORTED');
+  });
+
   it('keeps the worklist and dashboard tenant-scoped and TAT-aware', async () => {
     const worklist = await request(http)
       .get('/api/worklist')
       .set(auth(tokens.pathologist))
       .expect(200);
-    expect(worklist.body.items.length).toBeLessThanOrEqual(5);
+    expect(worklist.body.items.length).toBeLessThanOrEqual(10);
     expect(
       worklist.body.items.some((item: { testRequests: Array<{ discipline: string }> }) =>
         item.testRequests.some((request) => request.discipline === 'HISTOPATHOLOGY'),

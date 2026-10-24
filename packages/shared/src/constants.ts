@@ -256,6 +256,7 @@ export const CAPABILITIES = [
   'disciplines',
   'qc',
   'microbiology',
+  'quality',
 ] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
@@ -284,6 +285,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'disciplines',
     'qc',
     'microbiology',
+    'quality',
   ],
   RECEPTIONIST: ['dashboard', 'accession', 'cases', 'locator', 'labels', 'billing', 'collection'],
   PHLEBOTOMIST: ['dashboard', 'cases', 'locator', 'labels', 'collection'],
@@ -299,6 +301,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'results',
     'qc',
     'microbiology',
+    'quality',
   ],
   SCIENTIST: [
     'dashboard',
@@ -327,6 +330,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'disciplines',
     'qc',
     'microbiology',
+    'quality',
   ],
   REFERRER: ['referrer'],
 };
@@ -800,3 +804,25 @@ export const MICROBIOLOGY_CULTURE_STATUS_LABELS: Record<string, string> = {
   REPORTED: 'Reported',
   REJECTED: 'Rejected',
 };
+
+// Phase 5 — quality management and send-outs
+export const EQUIPMENT_STATUSES = ['ACTIVE', 'MAINTENANCE', 'RETIRED'] as const;
+export type EquipmentStatus = (typeof EQUIPMENT_STATUSES)[number];
+
+export const NC_STATUSES = ['OPEN', 'INVESTIGATING', 'CAPA', 'CLOSED'] as const;
+export type NcStatus = (typeof NC_STATUSES)[number];
+
+export const NC_SEVERITIES = ['MINOR', 'MAJOR', 'CRITICAL'] as const;
+export type NcSeverity = (typeof NC_SEVERITIES)[number];
+
+export const CAPA_STATUSES = ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'VERIFIED'] as const;
+export type CapaStatus = (typeof CAPA_STATUSES)[number];
+
+export const SEND_OUT_STATUSES = [
+  'SENT',
+  'IN_TRANSIT',
+  'RECEIVED',
+  'REPORTED',
+  'CANCELLED',
+] as const;
+export type SendOutStatus = (typeof SEND_OUT_STATUSES)[number];

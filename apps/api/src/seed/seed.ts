@@ -72,6 +72,7 @@ import { runWithSystemTenant } from '../common/context/tenant-context';
 import { seedPhase23 } from './phase23-seed';
 import { seedPhase2 } from './phase2-seed';
 import { seedPhase4 } from './phase4-seed';
+import { seedPhase5 } from './phase5-seed';
 import { hashPassword } from '../common/utils/crypto';
 import {
   breastProtocol,
@@ -1777,6 +1778,7 @@ export async function seedDatabase(): Promise<void> {
     await seedPhase23(connection, labId, users, year);
     await seedPhase2(connection, lab, now);
     await seedPhase4(connection, labId, now);
+    await seedPhase5(connection, labId, now);
     lab.accessionCounters.set(`invoice-${year}`, 9);
 
     for (const event of custodyEvents) {
