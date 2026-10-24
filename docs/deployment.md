@@ -2,7 +2,7 @@
 
 ## How many frontends?
 
-There is **one frontend application**: `apps/web` (Nuxt 3 / Vue 3). It contains all user surfaces behind one deployment:
+There is **one frontend application**: `frontends/web` (Nuxt 3 / Vue 3). It contains all user surfaces behind one deployment:
 
 - public marketing and demo site (`/landing`)
 - staff workspace (`/login`, `/dashboard`, `/cases`, `/results`, `/microbiology`, `/quality`)
@@ -14,30 +14,31 @@ There is **one frontend application**: `apps/web` (Nuxt 3 / Vue 3). It contains 
 
 Deploy this as **one Vercel project**. Do not split it into separate frontend repositories for deployment; the route groups share authentication, API client, layout and PWA runtime.
 
-Backend: one NestJS API (`apps/api`) on Railway. MongoDB and Redis are managed services.
+Backend: one NestJS API (`backend/api`) on Railway. MongoDB and Redis are managed services.
 
 ## Repository layout for deployment
 
 ```
 histopathology-lims (GitHub)
-├─ apps/web          -> Vercel
-├─ apps/api          -> Railway (Dockerfile)
+├─ frontends/web     -> Vercel (or alias frontend/)
+├─ backend/api       -> Railway (Dockerfile)
+├─ backend/connector -> Serial/TCP analyzer agent
 ├─ packages/shared   -> built during both deployments
 ├─ vercel.json
 ├─ railway.json
 └─ docs/deployment.md
 ```
 
-Vercel project root: **repository root**, not `apps/web`. The root `vercel.json` builds the shared package and the web app together.
+Vercel project root: **repository root** (recommended, root `vercel.json` builds shared package and web app together) or set root directory to `frontends/web`.
 
 ## Frontend — Vercel
 
 1. Vercel → **Add New Project** → import the `histopathology-lims` GitHub repository.
-2. Set **Root Directory** to the repository root.
+2. Set **Root Directory** to the repository root (or `frontends/web`).
 3. Framework preset: **Other** (the repository supplies `vercel.json`).
 4. Build command/output are already defined:
    - `pnpm --filter @lims/shared build && pnpm --filter @lims/web generate`
-   - output: `apps/web/.output/public`
+   - output: `frontends/web/.output/public`
 5. Add Production environment variables:
 
 | Variable                    | Example                                          |
@@ -54,11 +55,11 @@ Public runtime variables are **baked in at build time**. Changing `NUXT_PUBLIC_A
 
 ## Backend — Railway
 
-1. Create a Railway project from the same GitHub repository. Railway reads `railway.json` and builds `apps/api/Dockerfile`.
+1. Create a Railway project from the same GitHub repository. Railway reads `railway.json` and builds `backend/api/Dockerfile`.
 2. Add a **Redis** service and expose `REDIS_URL` to the API service.
 3. Use **MongoDB Atlas** (recommended) or a MongoDB replica set. The API uses transactions for accessioning, custody and onboarding; a standalone MongoDB will fail those operations. Set `MONGODB_URI` to the replica-set connection string.
 4. Add a **persistent volume** mounted at `/data` and set `STORAGE_DIR=/data/storage`. The container entrypoint repairs ownership and drops to the non-root `node` user. Without a volume, generated PDFs disappear on redeploy.
-5. Add API environment variables from [`apps/api/.env.production.example`](../apps/api/.env.production.example). Minimum required:
+5. Add API environment variables from [`backend/api/.env.production.example`](../backend/api/.env.production.example). Minimum required:
 
 | Variable                                   | Value                                 |
 | ------------------------------------------ | ------------------------------------- |

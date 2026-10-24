@@ -168,7 +168,10 @@ flowchart LR
 **Monorepo**
 
 ```
-apps/
+frontends/
+  web/        Nuxt 3: shared shell + route-grouped histopathology workspace;
+              referral portal, QA, inventory, billing, integrations, offline
+backend/
   api/        NestJS
               core/         auth, labs, users, patients, cases, test-requests,
                             specimens, custody, audit, worklist, reports,
@@ -176,8 +179,7 @@ apps/
               disciplines/  histopathology, haematology, chemistry, microbiology
               extensions/   retained later-roadmap modules (portal, billing,
                             inventory, QA, FHIR, HL7, WSI, terminology, sync)
-  web/        Nuxt 3: shared shell + route-grouped histopathology workspace;
-              referral portal, QA, inventory, billing, integrations, offline
+  connector/  Serial/TCP instrument gateway agent
 packages/
   shared/     Domain vocabulary, state machines, Zod schemas, API types,
               discipline/test-request contracts, TAT + accession formatting,
@@ -368,7 +370,7 @@ POST /api/super-admin/labs/:id/invite-admin         POST /api/auth/accept-invite
 
 Phase 6 additions:
 POST /api/instruments/messages                    GET /api/instruments/messages
-agent: node apps/connector/index.mjs --protocol ASTM --file result.astm
+agent: node backend/connector/index.mjs --protocol ASTM --file result.astm
 
 Phase 5 additions:
 GET/POST /api/quality/equipment                    GET/POST /quality/equipment/:id/temperature
@@ -460,7 +462,7 @@ The E2E suite (24 tests) starts an ephemeral MongoDB **replica set** with `mongo
 
 The visual system is clinical but opinionated: bone and ink surfaces, a single vermilion accent, a serif display face for hierarchy and monospaced metadata for barcodes and statuses. No decorative gradients, no stock dashboard charts. Status chips are readable at a glance in light and dark mode. The scan station deliberately abandons the app shell: full-screen, large type, keyboard-first, green/red feedback and audible confirmation.
 
-Tokens live in [`apps/web/tailwind.config.ts`](apps/web/tailwind.config.ts) and semantic CSS variables in [`apps/web/assets/css/main.css`](apps/web/assets/css/main.css). The app is responsive from 390 px mobile through 1024 px tablet to wide desktop, with accessible labels, focus states and reduced-motion support.
+Tokens live in [`frontends/web/tailwind.config.ts`](frontends/web/tailwind.config.ts) and semantic CSS variables in [`frontends/web/assets/css/main.css`](frontends/web/assets/css/main.css). The app is responsive from 390 px mobile through 1024 px tablet to wide desktop, with accessible labels, focus states and reduced-motion support.
 
 ## Security and operations notes
 

@@ -43,7 +43,8 @@ const envSchema = z
     PORTAL_DEBUG: boolFromEnv('false'),
     PORTAL_TOKEN_TTL_MINUTES: z.coerce.number().int().min(5).max(120).default(15),
     NOTIFICATIONS_MODE: z.enum(['outbox', 'live']).default('outbox'),
-    EMAIL_PROVIDER: z.enum(['log', 'smtp']).default('log'),
+    EMAIL_PROVIDER: z.enum(['log', 'smtp', 'resend']).default('log'),
+    RESEND_API_KEY: z.string().optional(),
     SMTP_HOST: z.string().min(1).optional(),
     SMTP_PORT: z.coerce.number().int().min(1).max(65_535).default(587),
     SMTP_SECURE: boolFromEnv('false'),
@@ -58,6 +59,12 @@ const envSchema = z
     TWILIO_FROM_NUMBER: z.string().optional(),
     TWILIO_WHATSAPP_FROM: z.string().optional(),
 
+    // Cloudinary asset storage
+    CLOUDINARY_CLOUD_NAME: z.string().optional(),
+    CLOUDINARY_API_KEY: z.string().optional(),
+    CLOUDINARY_API_SECRET: z.string().optional(),
+    CLOUDINARY_URL: z.string().optional(),
+
     // Phase 3 — interoperability
     FHIR_ENABLED: boolFromEnv('true'),
     HL7_ENABLED: boolFromEnv('false'),
@@ -67,6 +74,7 @@ const envSchema = z
     WSI_WEBHOOK_SECRET: z.string().min(16).optional(),
     PAYMENTS_MODE: z.enum(['mock', 'live']).default('mock'),
     PAYSTACK_SECRET_KEY: z.string().optional(),
+    PAYSTACK_PUBLIC_KEY: z.string().optional(),
     FLUTTERWAVE_SECRET_KEY: z.string().optional(),
     FLUTTERWAVE_WEBHOOK_HASH: z.string().optional(),
     DEFAULT_CURRENCY: z.string().length(3).default('NGN'),
@@ -132,8 +140,16 @@ const envSchema = z
       }
     }
 
-    if (value.NOTIFICATIONS_MODE === 'live' && value.EMAIL_PROVIDER === 'smtp') {
-      if (!value.SMTP_HOST || !value.SMTP_USER || !value.SMTP_PASS) {
+    if (value.NOTIFICATIONS_MODE === 'live' && (value.EMAIL_PROVIDER === 'smtp' || value.EMAIL_PROVIDER === 'resend')) {
+      if (value.EMAIL_PROVIDER === 'resend') {
+        if (!value.RESEND_API_KEY && !value.SMTP_PASS) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['RESEND_API_KEY'],
+            message: 'Resend delivery requires RESEND_API_KEY or SMTP_PASS.',
+          });
+        }
+      } else if (!value.SMTP_HOST || !value.SMTP_USER || !value.SMTP_PASS) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['SMTP_HOST'],

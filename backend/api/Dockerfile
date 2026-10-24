@@ -5,8 +5,8 @@ WORKDIR /app
 
 # Dependency layer: only package manifests invalidate pnpm install.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
-COPY apps/api/package.json apps/api/package.json
-COPY apps/web/package.json apps/web/package.json
+COPY backend/api/package.json backend/api/package.json
+COPY frontends/web/package.json frontends/web/package.json
 COPY packages/shared/package.json packages/shared/package.json
 RUN pnpm install --frozen-lockfile --filter @lims/api... --ignore-scripts
 
@@ -21,7 +21,7 @@ RUN apk add --no-cache su-exec
 ENV NODE_ENV=production
 ENV STORAGE_DIR=/data/storage
 COPY --from=build --chown=node:node /prod/api ./
-COPY --chown=root:root apps/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY --chown=root:root backend/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh && mkdir -p /data/storage && chown -R node:node /data
 ENTRYPOINT ["docker-entrypoint.sh"]
 EXPOSE 4000 2575

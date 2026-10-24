@@ -1,5 +1,6 @@
 packages:
-  - apps/*
+  - frontends/*
+  - backend/*
   - packages/*
 
 minimumReleaseAgeExclude:

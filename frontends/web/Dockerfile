@@ -5,8 +5,8 @@ WORKDIR /app
 
 # Dependency layer: only package manifests invalidate pnpm install.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
-COPY apps/api/package.json apps/api/package.json
-COPY apps/web/package.json apps/web/package.json
+COPY backend/api/package.json backend/api/package.json
+COPY frontends/web/package.json frontends/web/package.json
 COPY packages/shared/package.json packages/shared/package.json
 RUN pnpm install --frozen-lockfile --filter @lims/web... --ignore-scripts
 
@@ -18,7 +18,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
-COPY --from=build --chown=node:node /app/apps/web/.output ./
+COPY --from=build --chown=node:node /app/frontends/web/.output ./
 USER node
 EXPOSE 3000
 CMD ["node", "server/index.mjs"]

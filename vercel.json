@@ -3,7 +3,7 @@
   "framework": null,
   "installCommand": "corepack enable && corepack prepare pnpm@12.11.2 --activate && pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter @lims/shared build && pnpm --filter @lims/web generate",
-  "outputDirectory": "apps/web/.output/public",
+  "outputDirectory": "frontends/web/.output/public",
   "routes": [
     {
       "handle": "filesystem"

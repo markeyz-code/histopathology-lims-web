@@ -245,16 +245,30 @@ export class NotificationService {
   }
 
   private async sendEmail(notification: NotificationEntity): Promise<DeliveryResult> {
-    if (this.config.get<string>('EMAIL_PROVIDER') !== 'smtp') {
+    const provider = this.config.get<string>('EMAIL_PROVIDER');
+    if (provider !== 'smtp' && provider !== 'resend') {
       return { provider: 'outbox', messageId: `outbox-${notification._id.toString()}` };
     }
+    const isResend = provider === 'resend';
+    const host = isResend ? 'smtp.resend.com' : this.config.get<string>('SMTP_HOST');
+    const port = isResend
+      ? (this.config.get<number>('SMTP_PORT') ?? 465)
+      : (this.config.get<number>('SMTP_PORT') ?? 587);
+    const secure = isResend
+      ? (this.config.get<boolean>('SMTP_SECURE') ?? (port === 465))
+      : (this.config.get<boolean>('SMTP_SECURE') ?? false);
+    const user = isResend ? 'resend' : this.config.get<string>('SMTP_USER');
+    const pass = isResend
+      ? (this.config.get<string>('RESEND_API_KEY') ?? this.config.get<string>('SMTP_PASS'))
+      : this.config.get<string>('SMTP_PASS');
+
     this.transporter ??= nodemailer.createTransport({
-      host: this.config.get<string>('SMTP_HOST'),
-      port: this.config.get<number>('SMTP_PORT') ?? 587,
-      secure: this.config.get<boolean>('SMTP_SECURE') ?? false,
+      host,
+      port,
+      secure,
       auth: {
-        user: this.config.get<string>('SMTP_USER'),
-        pass: this.config.get<string>('SMTP_PASS'),
+        user,
+        pass,
       },
     });
     const result = await this.transporter.sendMail({
@@ -268,7 +282,7 @@ export class NotificationService {
         notification.body,
       )}</p><hr><p style="color:#777;font-size:12px">Histopathology LIMS</p></div>`,
     });
-    return { provider: 'smtp', messageId: result.messageId ?? null };
+    return { provider: isResend ? 'resend' : 'smtp', messageId: result.messageId ?? null };
   }
 
   private async sendSms(notification: NotificationEntity): Promise<DeliveryResult> {

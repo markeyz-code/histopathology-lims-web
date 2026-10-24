@@ -8,14 +8,14 @@ Phase 6 completes the integration surface. Most baseline adapters existed earlie
 - `GET /api/instruments/messages` lists raw/parsed messages, status and matching accession.
 - Parsers extract accession, patient name, test code, result values and units.
 - A message is `MATCHED` when its accession belongs to a TestRequest in the authenticated laboratory, otherwise `UNMATCHED` with an explicit reason.
-- `apps/connector/index.mjs` is a Node agent for serial/TCP gateways: it logs in, reads an ASTM/HL7 file or stdin, and posts the raw message to the LIMS.
+- `backend/connector/index.mjs` is a Node agent for serial/TCP gateways: it logs in, reads an ASTM/HL7 file or stdin, and posts the raw message to the LIMS.
 
 Example:
 
 ```bash
 LIMS_URL=http://localhost:4000/api LIMS_LAB_CODE=HISTO \
 LIMS_EMAIL=scientist@histo.ng LIMS_PASSWORD='Scientist#2026' \
-node apps/connector/index.mjs --protocol ASTM --file analyzer.astm
+node backend/connector/index.mjs --protocol ASTM --file analyzer.astm
 ```
 
 ## Existing adapters revalidated
