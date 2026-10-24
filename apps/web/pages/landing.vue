@@ -1125,17 +1125,17 @@ const faqs = [
 </script>
 
 <template>
-  <div id="main-content" class="min-h-screen bg-canvas text-ink selection:bg-accent/20">
+  <div id="main-content" class="min-h-screen w-full max-w-full overflow-x-clip bg-canvas text-ink selection:bg-accent/20">
     <!-- Top Clinical Telemetry & Accreditation Ribbon -->
     <div
-      class="hidden border-b border-rail-line/70 bg-rail px-4 py-1.5 font-mono text-[11px] text-rail-muted sm:block"
+      class="hidden border-b border-rail-line/70 bg-rail px-4 py-1.5 font-mono text-[11px] text-rail-muted sm:block w-full max-w-full overflow-hidden"
     >
       <div class="mx-auto flex max-w-shell items-center justify-between gap-3">
         <!-- Live System & Standard Badges -->
         <div
-          class="flex items-center gap-2 sm:gap-3 overflow-hidden text-ellipsis whitespace-nowrap"
+          class="flex items-center gap-2 sm:gap-3 overflow-hidden text-ellipsis whitespace-nowrap min-w-0"
         >
-          <span class="inline-flex items-center gap-1.5 font-medium text-rail-ink">
+          <span class="inline-flex items-center gap-1.5 font-medium text-rail-ink shrink-0">
             <span class="relative flex h-2 w-2">
               <span
                 class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"
@@ -1147,7 +1147,7 @@ const faqs = [
           </span>
           <span class="text-rail-line">|</span>
           <span
-            class="hidden sm:inline-flex items-center gap-1 text-2xs tracking-wide text-rail-muted"
+            class="hidden sm:inline-flex items-center gap-1 text-2xs tracking-wide text-rail-muted truncate"
           >
             <span class="text-emerald-400 font-semibold">ISO 15189:2022</span>
             <span>·</span>
@@ -1176,7 +1176,7 @@ const faqs = [
 
     <!-- MODERN, SPACIOUS NAVIGATION HEADER -->
     <header
-      class="sticky top-0 z-40 border-b border-line/70 bg-surface/90 backdrop-blur-xl shadow-xs transition-all duration-200"
+      class="sticky top-0 z-40 w-full max-w-full border-b border-line/70 bg-surface/90 backdrop-blur-xl shadow-xs transition-all duration-200"
     >
       <div
         class="mx-auto flex max-w-shell items-center justify-between gap-2 px-3 h-16 sm:gap-3 sm:px-6 lg:px-8"
@@ -1285,7 +1285,7 @@ const faqs = [
             >
               <div
                 v-if="isPortalsMenuOpen"
-                class="absolute right-0 mt-2 w-80 rounded-lg border border-line-strong bg-surface p-2 shadow-2xl z-50 animate-scan-in"
+                class="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] sm:w-80 max-w-sm rounded-lg border border-line-strong bg-surface p-2 shadow-2xl z-50 animate-scan-in"
                 style="background-color: rgb(var(--surface))"
                 role="menu"
               >
@@ -1548,17 +1548,18 @@ const faqs = [
       />
 
       <div class="relative mx-auto max-w-shell px-4 sm:px-6 lg:px-8">
-        <div class="grid items-center gap-12 lg:grid-cols-12 lg:gap-8">
+        <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-8">
           <!-- Left Hero Narrative -->
-          <div class="lg:col-span-7">
+          <div class="lg:col-span-7 min-w-0 w-full max-w-full">
             <div
-              class="inline-flex items-center gap-2 border border-accent/30 bg-accent-soft/40 px-3 py-1 font-mono text-2xs uppercase tracking-caps text-accent font-semibold"
+              class="inline-flex max-w-full items-center gap-2 border border-accent/30 bg-accent-soft/40 px-3 py-1 font-mono text-2xs uppercase tracking-caps text-accent font-semibold"
             >
-              <span class="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-              <span>Enterprise Medical Laboratory Information System</span>
+              <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent animate-pulse" />
+              <span class="hidden xs:inline">Enterprise Medical Laboratory Information System</span>
+              <span class="xs:hidden">Enterprise Medical LIMS</span>
             </div>
 
-            <h1 class="display mt-6 text-4xl sm:text-5xl lg:text-6xl tracking-tight text-ink">
+            <h1 class="display mt-6 text-3xl sm:text-5xl lg:text-6xl tracking-tight text-ink break-words">
               One Unified System.<br />
               All Laboratory Departments.<br />
               <span class="text-accent">Zero Diagnostic Compromise.</span>
@@ -1593,19 +1594,20 @@ const faqs = [
             </div>
 
             <!-- CTA Actions -->
-            <div class="mt-8 flex flex-wrap items-center gap-4">
+            <div class="mt-8 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
               <button
                 type="button"
-                class="flex items-center gap-2.5 bg-accent px-6 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink shadow-lift transition hover:bg-accent/90"
+                class="flex items-center justify-center gap-2.5 bg-accent px-4 sm:px-6 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink shadow-lift transition hover:bg-accent/90 text-center"
                 @click="openDemo('DEMO')"
               >
                 <AppIcon name="calendar" size="16" />
-                <span>Request Hospital Walkthrough</span>
+                <span class="hidden xs:inline">Request Hospital Walkthrough</span>
+                <span class="xs:hidden">Request Walkthrough</span>
               </button>
 
               <button
                 type="button"
-                class="flex items-center gap-2.5 border border-accent/50 bg-accent/10 px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-accent transition hover:bg-accent/20"
+                class="flex items-center justify-center gap-2.5 border border-accent/50 bg-accent/10 px-4 sm:px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-accent transition hover:bg-accent/20 text-center"
                 @click="openDemo('TRIAL')"
               >
                 <AppIcon name="check" size="16" />
@@ -1614,7 +1616,7 @@ const faqs = [
 
               <a
                 href="#departments"
-                class="flex items-center gap-2 border border-line-strong bg-raised px-5 py-3 font-mono text-xs uppercase tracking-wider text-ink transition hover:bg-canvas hover:border-ink"
+                class="flex items-center justify-center gap-2 border border-line-strong bg-raised px-4 sm:px-5 py-3 font-mono text-xs uppercase tracking-wider text-ink transition hover:bg-canvas hover:border-ink text-center"
               >
                 <AppIcon name="beaker" size="16" class="text-accent" />
                 <span>Explore All Departments</span>
@@ -1622,7 +1624,7 @@ const faqs = [
 
               <button
                 type="button"
-                class="flex items-center gap-2 px-3 py-2 font-mono text-xs text-muted transition hover:text-accent"
+                class="flex items-center justify-center gap-2 px-3 py-2 font-mono text-xs text-muted transition hover:text-accent text-center"
                 @click="isPersonaDrawerOpen = true"
               >
                 <AppIcon name="users" size="16" />
@@ -1632,44 +1634,44 @@ const faqs = [
           </div>
 
           <!-- Right Hero Console Card -->
-          <div class="lg:col-span-5">
+          <div class="lg:col-span-5 min-w-0 w-full max-w-full">
             <div
               class="relative overflow-hidden border border-line bg-rail text-rail-ink shadow-lift"
             >
               <div
-                class="flex items-center justify-between border-b border-rail-line bg-rail px-4 py-3"
+                class="flex flex-wrap items-center justify-between gap-2 border-b border-rail-line bg-rail px-3 py-2.5 sm:px-4 sm:py-3"
               >
-                <div class="flex items-center gap-2">
-                  <span class="h-2.5 w-2.5 rounded-full bg-red-500/80" />
-                  <span class="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
-                  <span class="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
-                  <span class="ml-2 font-mono text-2xs uppercase tracking-caps text-rail-muted">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-red-500/80" />
+                  <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500/80" />
+                  <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500/80" />
+                  <span class="ml-1 sm:ml-2 font-mono text-2xs uppercase tracking-caps text-rail-muted truncate">
                     Hospital Central Laboratory Console
                   </span>
                 </div>
-                <span class="font-mono text-2xs text-emerald-400 flex items-center gap-1">
+                <span class="font-mono text-2xs text-emerald-400 flex items-center gap-1 shrink-0">
                   <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
                   ALL UNITS ONLINE
                 </span>
               </div>
 
               <!-- Multi-Department Real-Time Telemetry -->
-              <div class="p-6 space-y-4 font-mono text-xs">
+              <div class="p-4 sm:p-6 space-y-4 font-mono text-xs overflow-hidden">
                 <!-- Patient Encounter Header -->
-                <div class="flex items-start justify-between border-b border-rail-line pb-3">
-                  <div>
+                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 border-b border-rail-line pb-3">
+                  <div class="min-w-0">
                     <span class="text-2xs uppercase tracking-caps text-accent"
                       >Encounter: EN-2026-000482</span
                     >
-                    <h3 class="font-display text-xl text-rail-ink">
+                    <h3 class="font-display text-lg sm:text-xl text-rail-ink break-words">
                       Patient: Mrs. Amina Bello (Age: 52 · F)
                     </h3>
-                    <p class="text-2xs text-rail-muted">
+                    <p class="text-2xs text-rail-muted break-words">
                       MRN: MRN-70419 · Ward: Oncology Annex · Dr. Adeleke
                     </p>
                   </div>
                   <span
-                    class="border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-2xs uppercase tracking-caps text-emerald-400"
+                    class="self-start border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-2xs uppercase tracking-caps text-emerald-400 shrink-0"
                   >
                     CUMULATIVE VIEW
                   </span>
@@ -1677,26 +1679,26 @@ const faqs = [
 
                 <!-- Discipline 1: Histology -->
                 <div class="border-l-2 border-rose-500 bg-rail-line/20 p-2.5">
-                  <div class="flex justify-between items-center">
-                    <span class="text-rose-400 font-semibold"
+                  <div class="flex flex-wrap justify-between items-center gap-1">
+                    <span class="text-rose-400 font-semibold break-words"
                       >HISTOPATHOLOGY: Breast Core Biopsy</span
                     >
-                    <span class="text-2xs uppercase text-emerald-400">REPORT LOCKED</span>
+                    <span class="text-2xs uppercase text-emerald-400 shrink-0">REPORT LOCKED</span>
                   </div>
-                  <span class="text-2xs text-rail-muted block mt-1"
+                  <span class="text-2xs text-rail-muted block mt-1 break-words"
                     >CAP Synoptic: Invasive Ductal Carcinoma · Nottingham Grade II</span
                   >
                 </div>
 
                 <!-- Discipline 2: Clinical Chemistry -->
                 <div class="border-l-2 border-sky-500 bg-rail-line/20 p-2.5">
-                  <div class="flex justify-between items-center">
-                    <span class="text-sky-400 font-semibold"
+                  <div class="flex flex-wrap justify-between items-center gap-1">
+                    <span class="text-sky-400 font-semibold break-words"
                       >CHEMICAL PATHOLOGY: Liver &amp; Renal Panel</span
                     >
-                    <span class="text-2xs uppercase text-sky-400">AUTOVERIFIED</span>
+                    <span class="text-2xs uppercase text-sky-400 shrink-0">AUTOVERIFIED</span>
                   </div>
-                  <div class="flex justify-between text-2xs text-rail-muted mt-1">
+                  <div class="flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-2xs text-rail-muted mt-1">
                     <span>Creatinine: 78 μmol/L (Norm)</span>
                     <span class="text-amber-400">Alk Phos: 168 U/L (Elevated ↑)</span>
                   </div>
@@ -1704,13 +1706,13 @@ const faqs = [
 
                 <!-- Discipline 3: Haematology -->
                 <div class="border-l-2 border-amber-500 bg-rail-line/20 p-2.5">
-                  <div class="flex justify-between items-center">
-                    <span class="text-amber-400 font-semibold"
+                  <div class="flex flex-wrap justify-between items-center gap-1">
+                    <span class="text-amber-400 font-semibold break-words"
                       >HAEMATOLOGY: Full Blood Count (FBC)</span
                     >
-                    <span class="text-2xs uppercase text-emerald-400">RELEASED</span>
+                    <span class="text-2xs uppercase text-emerald-400 shrink-0">RELEASED</span>
                   </div>
-                  <div class="flex justify-between text-2xs text-rail-muted mt-1">
+                  <div class="flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-2xs text-rail-muted mt-1">
                     <span>Hb: 11.8 g/dL</span>
                     <span>WBC: 6.4 × 10⁹/L</span>
                     <span>Platelets: 245 × 10⁹/L</span>
@@ -1719,22 +1721,22 @@ const faqs = [
 
                 <!-- Discipline 4: Microbiology -->
                 <div class="border-l-2 border-emerald-500 bg-rail-line/20 p-2.5">
-                  <div class="flex justify-between items-center">
-                    <span class="text-emerald-400 font-semibold"
+                  <div class="flex flex-wrap justify-between items-center gap-1">
+                    <span class="text-emerald-400 font-semibold break-words"
                       >MICROBIOLOGY: Blood Culture &amp; AST</span
                     >
-                    <span class="text-2xs uppercase text-emerald-400">NO GROWTH (48H)</span>
+                    <span class="text-2xs uppercase text-emerald-400 shrink-0">NO GROWTH (48H)</span>
                   </div>
-                  <span class="text-2xs text-rail-muted block mt-1"
+                  <span class="text-2xs text-rail-muted block mt-1 break-words"
                     >Automated incubation chamber log verified</span
                   >
                 </div>
 
                 <div
-                  class="pt-2 border-t border-rail-line flex items-center justify-between text-2xs text-rail-muted"
+                  class="pt-2 border-t border-rail-line flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-2xs text-rail-muted"
                 >
-                  <span>Tamper-Proof QR Seal: QR-9921-HP</span>
-                  <span class="text-emerald-400">Delivered via WhatsApp &amp; Portal</span>
+                  <span class="break-words">Tamper-Proof QR Seal: QR-9921-HP</span>
+                  <span class="text-emerald-400 shrink-0">Delivered via WhatsApp &amp; Portal</span>
                 </div>
               </div>
             </div>
@@ -1829,9 +1831,9 @@ const faqs = [
           v-show="activeDepartment === dept.id"
           class="mt-8 border border-line bg-raised p-6 sm:p-10 shadow-lift"
         >
-          <div class="grid items-center gap-10 lg:grid-cols-12">
+          <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
             <!-- Left Info -->
-            <div class="lg:col-span-6">
+            <div class="lg:col-span-6 min-w-0 w-full max-w-full">
               <div class="flex items-center gap-2">
                 <span
                   class="border px-2.5 py-0.5 font-mono text-2xs uppercase tracking-caps font-semibold"
@@ -1863,7 +1865,7 @@ const faqs = [
 
               <!-- Department KPI Highlight -->
               <div
-                class="mt-8 border border-line bg-canvas p-4 flex items-center justify-between font-mono text-xs"
+                class="mt-8 border border-line bg-canvas p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-mono text-xs"
               >
                 <div>
                   <span class="text-2xs text-muted uppercase tracking-caps block"
@@ -1874,17 +1876,17 @@ const faqs = [
                 <span class="text-2xs text-muted">{{ dept.statDesc }}</span>
               </div>
 
-              <div class="mt-6 flex items-center gap-3">
+              <div class="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <button
                   type="button"
-                  class="bg-accent px-5 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink transition hover:bg-accent/90"
+                  class="bg-accent px-5 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink transition hover:bg-accent/90 text-center"
                   @click="openDemo('DEMO')"
                 >
                   See {{ dept.shortName }} in Action
                 </button>
                 <button
                   type="button"
-                  class="border border-line bg-surface px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-ink transition hover:bg-canvas"
+                  class="border border-line bg-surface px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-ink transition hover:bg-canvas text-center"
                   @click="isPersonaDrawerOpen = true"
                 >
                   Test Staff Persona
@@ -1893,7 +1895,7 @@ const faqs = [
             </div>
 
             <!-- Right Screenshot Preview -->
-            <div class="lg:col-span-6">
+            <div class="lg:col-span-6 min-w-0 w-full max-w-full">
               <div
                 class="relative overflow-hidden border border-line bg-rail text-rail-ink shadow-lift"
               >
@@ -1925,15 +1927,16 @@ const faqs = [
 
     <!-- INTERACTIVE 7-STATION SPECIMEN JOURNEY SIMULATOR -->
     <!-- INTERACTIVE MULTI-DISCIPLINE SPECIMEN JOURNEY & BENCHTOP SIMULATOR -->
-    <section id="custody" class="scroll-mt-20 border-b border-line bg-surface py-16 lg:py-24">
-      <div class="mx-auto max-w-shell px-4 sm:px-6 lg:px-8">
+    <section id="custody" class="scroll-mt-20 border-b border-line bg-surface py-16 lg:py-24 w-full max-w-full overflow-hidden">
+      <div class="mx-auto max-w-shell px-4 sm:px-6 lg:px-8 w-full max-w-full min-w-0">
         <!-- Section Header -->
         <div class="text-center max-w-3xl mx-auto">
           <div
-            class="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 font-mono text-2xs uppercase tracking-caps text-accent font-semibold mb-3"
+            class="inline-flex max-w-full items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 font-mono text-2xs uppercase tracking-caps text-accent font-semibold mb-3"
           >
-            <span class="h-2 w-2 rounded-full bg-accent animate-ping" />
-            <span>Interactive Multi-Discipline Custody Simulator</span>
+            <span class="h-2 w-2 shrink-0 rounded-full bg-accent animate-ping" />
+            <span class="hidden xs:inline">Interactive Multi-Discipline Custody Simulator</span>
+            <span class="xs:hidden">Custody Simulator</span>
           </div>
           <h2 class="display mt-1 text-3xl sm:text-4xl lg:text-5xl text-ink">
             Simulate Specimen Chain of Custody Across All 5 Units
@@ -2100,7 +2103,7 @@ const faqs = [
         </div>
 
         <!-- 3. STAGE SELECTOR STRIP -->
-        <div class="mt-8 overflow-x-auto pb-4 scroll-area">
+        <div class="mt-8 w-full max-w-full min-w-0 overflow-x-auto pb-4 scroll-area">
           <div class="flex gap-2.5 min-w-max">
             <button
               v-for="(st, idx) in unitStations"
@@ -2161,9 +2164,9 @@ const faqs = [
             class="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-accent to-transparent animate-pulse shadow-[0_0_15px_rgba(255,111,71,1)]"
           />
 
-          <div class="grid items-center gap-10 lg:grid-cols-12">
+          <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
             <!-- Left: Bench Terminal & Interactive Scanner -->
-            <div class="lg:col-span-6">
+            <div class="lg:col-span-6 min-w-0 w-full max-w-full">
               <!-- Department & State Chip -->
               <div class="flex flex-wrap items-center gap-2">
                 <span
@@ -2192,19 +2195,19 @@ const faqs = [
                 class="mt-6 rounded-lg border border-line bg-canvas p-4 font-mono text-xs shadow-xs"
               >
                 <!-- Barcode Payload & Scan Status -->
-                <div class="flex items-center justify-between border-b border-line/60 pb-3">
-                  <div class="flex items-center gap-2">
-                    <span class="text-muted uppercase tracking-caps text-2xs"
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line/60 pb-3">
+                  <div class="flex items-center gap-2 min-w-0 flex-wrap">
+                    <span class="text-muted uppercase tracking-caps text-2xs shrink-0"
                       >Barcode Payload:</span
                     >
                     <span
-                      class="text-ink font-bold bg-raised px-2 py-0.5 rounded border border-line/60"
+                      class="text-ink font-bold bg-raised px-2 py-0.5 rounded border border-line/60 break-all"
                     >
                       {{ activeStation.barcode }}
                     </span>
                   </div>
                   <span
-                    class="rounded-full px-2 py-0.5 text-2xs font-semibold"
+                    class="self-start sm:self-auto rounded-full px-2 py-0.5 text-2xs font-semibold shrink-0"
                     :class="
                       isScanningSimulated
                         ? 'bg-accent text-accent-ink animate-bounce'
@@ -2218,7 +2221,7 @@ const faqs = [
                 <!-- State Machine Guarantee -->
                 <div class="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <span class="text-muted uppercase tracking-caps text-2xs">System Guarantee:</span>
-                  <span class="text-emerald-600 dark:text-emerald-400 font-semibold text-right">
+                  <span class="text-emerald-600 dark:text-emerald-400 font-semibold sm:text-right">
                     {{ activeStation.highlight }}
                   </span>
                 </div>
@@ -2267,7 +2270,7 @@ const faqs = [
             </div>
 
             <!-- Right: Software Screen Preview -->
-            <div class="lg:col-span-6">
+            <div class="lg:col-span-6 min-w-0 w-full max-w-full">
               <div
                 class="relative overflow-hidden rounded-lg border border-line bg-rail text-rail-ink shadow-lift"
               >
@@ -2275,13 +2278,13 @@ const faqs = [
                 <div
                   class="flex items-center justify-between border-b border-rail-line bg-rail px-4 py-2.5 font-mono text-2xs uppercase tracking-caps text-rail-muted"
                 >
-                  <div class="flex items-center gap-2">
-                    <span class="h-2.5 w-2.5 rounded-full bg-red-500/80" />
-                    <span class="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
-                    <span class="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
-                    <span class="ml-2 font-semibold text-rail-ink">Actual Software Interface</span>
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-red-500/80" />
+                    <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500/80" />
+                    <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500/80" />
+                    <span class="ml-2 font-semibold text-rail-ink truncate">Actual Software Interface</span>
                   </div>
-                  <span class="text-accent font-semibold">{{
+                  <span class="text-accent font-semibold shrink-0">{{
                     activeStation.id.toUpperCase()
                   }}</span>
                 </div>
@@ -2362,8 +2365,8 @@ const faqs = [
     <!-- ISO 15189, QUALITY CONTROL & WESTGARD RULES -->
     <section id="quality" class="scroll-mt-20 border-b border-line bg-canvas py-16 lg:py-24">
       <div class="mx-auto max-w-shell px-4 sm:px-6 lg:px-8">
-        <div class="grid items-center gap-12 lg:grid-cols-12">
-          <div class="lg:col-span-5">
+        <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
+          <div class="lg:col-span-5 min-w-0 w-full max-w-full">
             <span class="font-mono text-2xs uppercase tracking-caps text-accent font-semibold"
               >Laboratory Accreditation</span
             >
@@ -2407,7 +2410,7 @@ const faqs = [
             </div>
           </div>
 
-          <div class="lg:col-span-7">
+          <div class="lg:col-span-7 min-w-0 w-full max-w-full">
             <div
               class="relative overflow-hidden border border-line bg-rail text-rail-ink shadow-lift"
             >
@@ -2425,7 +2428,7 @@ const faqs = [
                     class="h-auto w-full object-cover"
                   />
                 </div>
-                <div class="mt-6 grid grid-cols-3 gap-3 font-mono text-xs text-rail-muted">
+                <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs text-rail-muted">
                   <div class="bg-rail-line/30 p-3">
                     <span class="block text-2xs uppercase tracking-caps">Westgard 1₃s Rule</span>
                     <span class="mt-1 block text-emerald-400 font-bold">PASSED</span>
@@ -2463,9 +2466,9 @@ const faqs = [
         </div>
 
         <div class="mt-12 max-w-4xl mx-auto border border-line bg-raised p-6 sm:p-10 shadow-lift">
-          <div class="grid gap-8 lg:grid-cols-2 items-center">
+          <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 items-center">
             <!-- Left: Sliders -->
-            <div class="space-y-6">
+            <div class="space-y-6 min-w-0 w-full max-w-full">
               <div>
                 <div
                   class="flex items-center justify-between font-mono text-xs uppercase tracking-wide"
@@ -2534,7 +2537,7 @@ const faqs = [
             </div>
 
             <!-- Right: Results Card -->
-            <div class="border border-line bg-surface p-6 sm:p-8">
+            <div class="border border-line bg-surface p-6 sm:p-8 min-w-0 w-full max-w-full">
               <span class="font-mono text-2xs uppercase tracking-caps text-accent font-semibold"
                 >Projected Laboratory Gains</span
               >
@@ -2655,8 +2658,8 @@ const faqs = [
     <!-- SUPPORT & COMMERCIAL CONTACT -->
     <section id="support" class="scroll-mt-20 border-b border-line bg-canvas py-16 lg:py-24">
       <div class="mx-auto max-w-shell px-4 sm:px-6 lg:px-8">
-        <div class="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <div>
+        <div class="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div class="min-w-0 w-full max-w-full">
             <span class="font-mono text-2xs uppercase tracking-caps text-accent font-semibold"
               >Support &amp; commercial</span
             >
@@ -2701,7 +2704,7 @@ const faqs = [
               </button>
             </div>
           </div>
-          <div class="border border-line bg-raised p-6 sm:p-8">
+          <div class="border border-line bg-raised p-6 sm:p-8 min-w-0 w-full max-w-full">
             <div v-if="supportSubmitted" class="py-10 text-center">
               <div
                 class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500"
@@ -3244,8 +3247,8 @@ const faqs = [
           :key="persona.email"
           class="border border-line bg-surface p-4 transition hover:border-line-strong"
         >
-          <div class="flex items-start justify-between gap-4">
-            <div>
+          <div class="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+            <div class="min-w-0">
               <span
                 class="inline-block border border-accent/30 bg-accent-soft/40 px-2 py-0.5 font-mono text-2xs uppercase tracking-caps text-accent font-semibold"
               >
@@ -3283,11 +3286,11 @@ const faqs = [
       </div>
 
       <template #footer>
-        <div class="flex justify-between items-center w-full">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 w-full">
           <span class="font-mono text-2xs text-muted">Passwords are for sandbox evaluation.</span>
           <button
             type="button"
-            class="border border-line bg-surface px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink"
+            class="self-end sm:self-auto border border-line bg-surface px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink"
             @click="isPersonaDrawerOpen = false"
           >
             Close

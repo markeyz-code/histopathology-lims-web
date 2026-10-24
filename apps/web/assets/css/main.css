@@ -52,11 +52,16 @@
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
+    overflow-x: clip;
+    max-width: 100%;
   }
 
   body {
     @apply bg-canvas font-sans text-[15px] leading-relaxed text-ink antialiased;
     font-variant-ligatures: common-ligatures;
+    overflow-x: clip;
+    max-width: 100%;
+    width: 100%;
   }
 
   ::selection {
@@ -90,6 +95,8 @@
   .display {
     @apply font-display font-normal;
     font-feature-settings: 'liga' 1;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   .label-caps {

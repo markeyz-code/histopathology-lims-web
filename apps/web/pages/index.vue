@@ -21,6 +21,8 @@ useHead({
 });
 
 const auth = useAuthStore();
+const api = useApi();
+const toast = useToast();
 
 // Mobile navigation drawer state
 const isMobileNavOpen = ref(false);
@@ -866,16 +868,47 @@ const calculatedRevenueProtected = computed(() => {
 // Interactive Demo Request Modal
 const isDemoModalOpen = ref(false);
 const isDemoSubmitted = ref(false);
+const demoLeadType = ref<'DEMO' | 'TRIAL'>('DEMO');
+const demoSubmitting = ref(false);
+const demoError = ref<string | null>(null);
 const demoForm = reactive({
   hospitalName: '',
   contactName: '',
-  clinicalRole: 'Chief Medical Laboratory Scientist',
+  clinicalRole: 'Chief Medical Laboratory Scientist (CMLS)',
   email: '',
   phone: '',
-  monthlyVolume: '300 - 800 tests',
+  monthlyVolume: '300 - 1,000 tests / month',
   disciplines: ['Histopathology', 'Clinical Chemistry', 'Haematology'],
   notes: '',
 });
+
+const roleOther = ref('');
+const volumeOther = ref('');
+const roleOptions = [
+  'Chief Medical Laboratory Scientist (CMLS)',
+  'Consultant Pathologist / Histopathologist',
+  'Chief Medical Director (CMD) / Hospital Board',
+  'Laboratory Manager / Quality Officer',
+  'Head of Hospital IT / Informatics',
+  'Private Diagnostic Center Director',
+].map((value) => ({ value, label: value }));
+roleOptions.push({ value: 'Other', label: 'Other — enter your role' });
+const volumeOptions = [
+  '< 300 tests / month',
+  '300 - 1,000 tests / month',
+  '1,000 - 5,000 tests / month',
+  '5,000+ tests / month (Tertiary Centre)',
+].map((value) => ({ value, label: value }));
+volumeOptions.push({ value: 'Other', label: 'Other — enter a custom volume' });
+
+function openDemo(type: 'DEMO' | 'TRIAL' = 'DEMO', discipline?: string): void {
+  demoLeadType.value = type;
+  demoError.value = null;
+  if (discipline && !demoForm.disciplines.includes(discipline)) {
+    demoForm.disciplines = [discipline, ...demoForm.disciplines].slice(0, 5);
+  }
+  isDemoModalOpen.value = true;
+}
 
 function toggleDiscipline(disc: string) {
   const index = demoForm.disciplines.indexOf(disc);
@@ -886,13 +919,105 @@ function toggleDiscipline(disc: string) {
   }
 }
 
-function submitDemoRequest() {
+async function submitDemoRequest(): Promise<void> {
   if (!demoForm.hospitalName || !demoForm.email) return;
-  isDemoSubmitted.value = true;
+  demoSubmitting.value = true;
+  demoError.value = null;
+  try {
+    await api.post('/leads', {
+      type: demoLeadType.value,
+      organizationName: demoForm.hospitalName,
+      contactName: demoForm.contactName || demoForm.email,
+      email: demoForm.email,
+      phone: demoForm.phone || null,
+      role:
+        demoForm.clinicalRole === 'Other'
+          ? roleOther.value.trim() || 'Other'
+          : demoForm.clinicalRole,
+      departments: demoForm.disciplines,
+      monthlyVolume:
+        demoForm.monthlyVolume === 'Other'
+          ? volumeOther.value.trim() || 'Other'
+          : demoForm.monthlyVolume,
+      message: demoForm.notes || null,
+    });
+    isDemoSubmitted.value = true;
+  } catch (caught) {
+    demoError.value = apiErrorMessage(caught);
+  } finally {
+    demoSubmitting.value = false;
+  }
 }
+
+const supportSubmitted = ref(false);
+const supportSubmitting = ref(false);
+const supportError = ref<string | null>(null);
+const supportForm = reactive({
+  organizationName: '',
+  contactName: '',
+  email: '',
+  phone: '',
+  message: '',
+});
+
+async function submitSupport(): Promise<void> {
+  if (!supportForm.organizationName || !supportForm.contactName || !supportForm.email) return;
+  supportSubmitting.value = true;
+  supportError.value = null;
+  try {
+    await api.post('/leads', {
+      type: 'SUPPORT',
+      organizationName: supportForm.organizationName,
+      contactName: supportForm.contactName,
+      email: supportForm.email,
+      phone: supportForm.phone || null,
+      message: supportForm.message || null,
+      departments: [],
+    });
+    supportSubmitted.value = true;
+    toast.success('Support request received', 'Our clinical informatics team will respond.');
+  } catch (caught) {
+    supportError.value = apiErrorMessage(caught);
+  } finally {
+    supportSubmitting.value = false;
+  }
+}
+
+const departmentDemoAccounts = [
+  {
+    discipline: 'Histopathology',
+    subtitle: 'Biopsy custody, synoptic reporting and slide sign-out',
+    email: 'pathologist@histo.ng',
+    password: 'Pathologist#2026',
+    icon: 'microscope',
+  },
+  {
+    discipline: 'Clinical Chemistry',
+    subtitle: 'Analytes, reference ranges, autoverification and critical alerts',
+    email: 'scientist@histo.ng',
+    password: 'Scientist#2026',
+    icon: 'beaker',
+  },
+  {
+    discipline: 'Haematology',
+    subtitle: 'FBC, coagulation, morphology and Westgard QC',
+    email: 'scientist@histo.ng',
+    password: 'Scientist#2026',
+    icon: 'flask',
+  },
+  {
+    discipline: 'Medical Microbiology',
+    subtitle: 'Culture lifecycle, organism ID and AST breakpoints',
+    email: 'pathologist2@histo.ng',
+    password: 'Pathologist#2026',
+    icon: 'shield',
+  },
+];
 
 function resetDemoModal() {
   isDemoModalOpen.value = false;
+  roleOther.value = '';
+  volumeOther.value = '';
   setTimeout(() => {
     isDemoSubmitted.value = false;
   }, 400);
@@ -918,6 +1043,15 @@ const demoPersonas = [
     tasks:
       'Enter chemistry/haematology results, trigger autoverification rules, acknowledge critical values.',
     icon: 'beaker',
+  },
+  {
+    role: 'Microbiology Scientist',
+    name: 'Dr. Ada Nwosu (Medical Microbiology)',
+    email: 'pathologist2@histo.ng',
+    password: 'Pathologist#2026',
+    tasks:
+      'Culture bench, organism identification, CLSI/EUCAST AST, resistance flags and antibiogram review.',
+    icon: 'shield',
   },
   {
     role: 'Histotechnologist',
@@ -991,17 +1125,17 @@ const faqs = [
 </script>
 
 <template>
-  <div class="min-h-screen bg-canvas text-ink selection:bg-accent/20">
+  <div id="main-content" class="min-h-screen w-full max-w-full overflow-x-clip bg-canvas text-ink selection:bg-accent/20">
     <!-- Top Clinical Telemetry & Accreditation Ribbon -->
     <div
-      class="border-b border-rail-line/70 bg-rail px-4 py-1.5 font-mono text-[11px] text-rail-muted"
+      class="hidden border-b border-rail-line/70 bg-rail px-4 py-1.5 font-mono text-[11px] text-rail-muted sm:block w-full max-w-full overflow-hidden"
     >
       <div class="mx-auto flex max-w-shell items-center justify-between gap-3">
         <!-- Live System & Standard Badges -->
         <div
-          class="flex items-center gap-2 sm:gap-3 overflow-hidden text-ellipsis whitespace-nowrap"
+          class="flex items-center gap-2 sm:gap-3 overflow-hidden text-ellipsis whitespace-nowrap min-w-0"
         >
-          <span class="inline-flex items-center gap-1.5 font-medium text-rail-ink">
+          <span class="inline-flex items-center gap-1.5 font-medium text-rail-ink shrink-0">
             <span class="relative flex h-2 w-2">
               <span
                 class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"
@@ -1013,7 +1147,7 @@ const faqs = [
           </span>
           <span class="text-rail-line">|</span>
           <span
-            class="hidden sm:inline-flex items-center gap-1 text-2xs tracking-wide text-rail-muted"
+            class="hidden sm:inline-flex items-center gap-1 text-2xs tracking-wide text-rail-muted truncate"
           >
             <span class="text-emerald-400 font-semibold">ISO 15189:2022</span>
             <span>·</span>
@@ -1033,7 +1167,7 @@ const faqs = [
           >
             <AppIcon name="users" size="12" class="text-accent" />
             <span class="font-semibold">Interactive Roles</span>
-            <span class="hidden md:inline text-rail-muted text-[10px]">(5 Personas)</span>
+            <span class="hidden md:inline text-rail-muted text-[10px]">(6 Personas)</span>
             <span class="text-[10px] transition-transform group-hover:translate-x-0.5">→</span>
           </button>
         </div>
@@ -1042,9 +1176,11 @@ const faqs = [
 
     <!-- MODERN, SPACIOUS NAVIGATION HEADER -->
     <header
-      class="sticky top-0 z-40 border-b border-line/70 bg-surface/90 backdrop-blur-xl shadow-xs transition-all duration-200"
+      class="sticky top-0 z-40 w-full max-w-full border-b border-line/70 bg-surface/90 backdrop-blur-xl shadow-xs transition-all duration-200"
     >
-      <div class="mx-auto flex max-w-shell items-center justify-between px-4 h-16 sm:px-6 lg:px-8">
+      <div
+        class="mx-auto flex max-w-shell items-center justify-between gap-2 px-3 h-16 sm:gap-3 sm:px-6 lg:px-8"
+      >
         <!-- Left: Wordmark & Medical Subtitle Badge -->
         <div class="flex items-center gap-3 shrink-0">
           <NuxtLink to="/landing" class="group flex items-center gap-3 focus:outline-none">
@@ -1090,6 +1226,12 @@ const faqs = [
             ROI Calculator
           </a>
           <a
+            href="#support"
+            class="px-3.5 py-2 rounded-md text-muted hover:text-ink hover:bg-raised transition-all"
+          >
+            Support
+          </a>
+          <a
             href="#faq"
             class="px-3.5 py-2 rounded-md text-muted hover:text-ink hover:bg-raised transition-all"
           >
@@ -1099,7 +1241,7 @@ const faqs = [
 
         <!-- Right: Uncrowded Actions & Refined Portals Dropdown -->
         <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
-          <ThemeToggle />
+          <div class="hidden sm:block"><ThemeToggle /></div>
 
           <!-- Authenticated State -->
           <NuxtLink
@@ -1112,7 +1254,7 @@ const faqs = [
           </NuxtLink>
 
           <!-- Unauthenticated Portals Dropdown (Replaces 2 separate bulky buttons!) -->
-          <div v-else ref="portalsDropdownRef" class="relative">
+          <div v-else ref="portalsDropdownRef" class="relative hidden sm:block">
             <button
               type="button"
               class="inline-flex items-center gap-2 rounded-md border border-line bg-raised px-3 py-2 font-mono text-xs uppercase tracking-wider text-ink transition hover:border-line-strong hover:bg-surface focus:outline-none"
@@ -1143,7 +1285,7 @@ const faqs = [
             >
               <div
                 v-if="isPortalsMenuOpen"
-                class="absolute right-0 mt-2 w-80 rounded-lg border border-line-strong bg-surface p-2 shadow-2xl z-50 animate-scan-in"
+                class="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] sm:w-80 max-w-sm rounded-lg border border-line-strong bg-surface p-2 shadow-2xl z-50 animate-scan-in"
                 style="background-color: rgb(var(--surface))"
                 role="menu"
               >
@@ -1219,7 +1361,7 @@ const faqs = [
                 >
                   <span class="flex items-center gap-1.5 font-semibold">
                     <AppIcon name="users" size="13" />
-                    <span>Try 5 Instant Demo Roles</span>
+                    <span>Try 6 Instant Demo Roles</span>
                   </span>
                   <span class="text-xs">→</span>
                 </button>
@@ -1231,10 +1373,11 @@ const faqs = [
           <button
             type="button"
             class="group inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink shadow-sm transition hover:bg-accent/90 hover:shadow-lift hover:-translate-y-0.5 active:translate-y-0"
-            @click="isDemoModalOpen = true"
+            @click="openDemo('DEMO')"
           >
             <AppIcon name="calendar" size="14" class="transition-transform group-hover:scale-110" />
-            <span class="whitespace-nowrap">Book Demo</span>
+            <span class="hidden xs:inline whitespace-nowrap">Book Demo</span>
+            <span class="xs:hidden whitespace-nowrap">Demo</span>
           </button>
 
           <!-- Mobile Hamburger Trigger -->
@@ -1302,6 +1445,14 @@ const faqs = [
                 <span class="font-mono text-2xs text-muted">Interactive</span>
               </a>
               <a
+                href="#support"
+                class="flex items-center justify-between rounded-md py-2 px-3 text-ink hover:bg-raised transition"
+                @click="isMobileNavOpen = false"
+              >
+                <span>Support &amp; Commercial</span>
+                <span class="font-mono text-2xs text-accent">Contact</span>
+              </a>
+              <a
                 href="#faq"
                 class="flex items-center justify-between rounded-md py-2 px-3 text-ink hover:bg-raised transition"
                 @click="isMobileNavOpen = false"
@@ -1360,7 +1511,7 @@ const faqs = [
               >
                 <span class="flex items-center gap-2 font-semibold uppercase tracking-wider">
                   <AppIcon name="users" size="14" />
-                  <span>Launch 5 Live Demo Personas</span>
+                  <span>Launch 6 Live Demo Personas</span>
                 </span>
                 <span>→</span>
               </button>
@@ -1397,17 +1548,18 @@ const faqs = [
       />
 
       <div class="relative mx-auto max-w-shell px-4 sm:px-6 lg:px-8">
-        <div class="grid items-center gap-12 lg:grid-cols-12 lg:gap-8">
+        <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-8">
           <!-- Left Hero Narrative -->
-          <div class="lg:col-span-7">
+          <div class="lg:col-span-7 min-w-0 w-full max-w-full">
             <div
-              class="inline-flex items-center gap-2 border border-accent/30 bg-accent-soft/40 px-3 py-1 font-mono text-2xs uppercase tracking-caps text-accent font-semibold"
+              class="inline-flex max-w-full items-center gap-2 border border-accent/30 bg-accent-soft/40 px-3 py-1 font-mono text-2xs uppercase tracking-caps text-accent font-semibold"
             >
-              <span class="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-              <span>Enterprise Medical Laboratory Information System</span>
+              <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent animate-pulse" />
+              <span class="hidden xs:inline">Enterprise Medical Laboratory Information System</span>
+              <span class="xs:hidden">Enterprise Medical LIMS</span>
             </div>
 
-            <h1 class="display mt-6 text-4xl sm:text-5xl lg:text-6xl tracking-tight text-ink">
+            <h1 class="display mt-6 text-3xl sm:text-5xl lg:text-6xl tracking-tight text-ink break-words">
               One Unified System.<br />
               All Laboratory Departments.<br />
               <span class="text-accent">Zero Diagnostic Compromise.</span>
@@ -1442,19 +1594,29 @@ const faqs = [
             </div>
 
             <!-- CTA Actions -->
-            <div class="mt-8 flex flex-wrap items-center gap-4">
+            <div class="mt-8 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
               <button
                 type="button"
-                class="flex items-center gap-2.5 bg-accent px-6 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink shadow-lift transition hover:bg-accent/90"
-                @click="isDemoModalOpen = true"
+                class="flex items-center justify-center gap-2.5 bg-accent px-4 sm:px-6 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink shadow-lift transition hover:bg-accent/90 text-center"
+                @click="openDemo('DEMO')"
               >
                 <AppIcon name="calendar" size="16" />
-                <span>Request Hospital Walkthrough</span>
+                <span class="hidden xs:inline">Request Hospital Walkthrough</span>
+                <span class="xs:hidden">Request Walkthrough</span>
+              </button>
+
+              <button
+                type="button"
+                class="flex items-center justify-center gap-2.5 border border-accent/50 bg-accent/10 px-4 sm:px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-accent transition hover:bg-accent/20 text-center"
+                @click="openDemo('TRIAL')"
+              >
+                <AppIcon name="check" size="16" />
+                <span>Start 1-Month Free Trial</span>
               </button>
 
               <a
                 href="#departments"
-                class="flex items-center gap-2 border border-line-strong bg-raised px-5 py-3 font-mono text-xs uppercase tracking-wider text-ink transition hover:bg-canvas hover:border-ink"
+                class="flex items-center justify-center gap-2 border border-line-strong bg-raised px-4 sm:px-5 py-3 font-mono text-xs uppercase tracking-wider text-ink transition hover:bg-canvas hover:border-ink text-center"
               >
                 <AppIcon name="beaker" size="16" class="text-accent" />
                 <span>Explore All Departments</span>
@@ -1462,7 +1624,7 @@ const faqs = [
 
               <button
                 type="button"
-                class="flex items-center gap-2 px-3 py-2 font-mono text-xs text-muted transition hover:text-accent"
+                class="flex items-center justify-center gap-2 px-3 py-2 font-mono text-xs text-muted transition hover:text-accent text-center"
                 @click="isPersonaDrawerOpen = true"
               >
                 <AppIcon name="users" size="16" />
@@ -1472,44 +1634,44 @@ const faqs = [
           </div>
 
           <!-- Right Hero Console Card -->
-          <div class="lg:col-span-5">
+          <div class="lg:col-span-5 min-w-0 w-full max-w-full">
             <div
               class="relative overflow-hidden border border-line bg-rail text-rail-ink shadow-lift"
             >
               <div
-                class="flex items-center justify-between border-b border-rail-line bg-rail px-4 py-3"
+                class="flex flex-wrap items-center justify-between gap-2 border-b border-rail-line bg-rail px-3 py-2.5 sm:px-4 sm:py-3"
               >
-                <div class="flex items-center gap-2">
-                  <span class="h-2.5 w-2.5 rounded-full bg-red-500/80" />
-                  <span class="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
-                  <span class="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
-                  <span class="ml-2 font-mono text-2xs uppercase tracking-caps text-rail-muted">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-red-500/80" />
+                  <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500/80" />
+                  <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500/80" />
+                  <span class="ml-1 sm:ml-2 font-mono text-2xs uppercase tracking-caps text-rail-muted truncate">
                     Hospital Central Laboratory Console
                   </span>
                 </div>
-                <span class="font-mono text-2xs text-emerald-400 flex items-center gap-1">
+                <span class="font-mono text-2xs text-emerald-400 flex items-center gap-1 shrink-0">
                   <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
                   ALL UNITS ONLINE
                 </span>
               </div>
 
               <!-- Multi-Department Real-Time Telemetry -->
-              <div class="p-6 space-y-4 font-mono text-xs">
+              <div class="p-4 sm:p-6 space-y-4 font-mono text-xs overflow-hidden">
                 <!-- Patient Encounter Header -->
-                <div class="flex items-start justify-between border-b border-rail-line pb-3">
-                  <div>
+                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 border-b border-rail-line pb-3">
+                  <div class="min-w-0">
                     <span class="text-2xs uppercase tracking-caps text-accent"
                       >Encounter: EN-2026-000482</span
                     >
-                    <h3 class="font-display text-xl text-rail-ink">
+                    <h3 class="font-display text-lg sm:text-xl text-rail-ink break-words">
                       Patient: Mrs. Amina Bello (Age: 52 · F)
                     </h3>
-                    <p class="text-2xs text-rail-muted">
+                    <p class="text-2xs text-rail-muted break-words">
                       MRN: MRN-70419 · Ward: Oncology Annex · Dr. Adeleke
                     </p>
                   </div>
                   <span
-                    class="border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-2xs uppercase tracking-caps text-emerald-400"
+                    class="self-start border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-2xs uppercase tracking-caps text-emerald-400 shrink-0"
                   >
                     CUMULATIVE VIEW
                   </span>
@@ -1517,26 +1679,26 @@ const faqs = [
 
                 <!-- Discipline 1: Histology -->
                 <div class="border-l-2 border-rose-500 bg-rail-line/20 p-2.5">
-                  <div class="flex justify-between items-center">
-                    <span class="text-rose-400 font-semibold"
+                  <div class="flex flex-wrap justify-between items-center gap-1">
+                    <span class="text-rose-400 font-semibold break-words"
                       >HISTOPATHOLOGY: Breast Core Biopsy</span
                     >
-                    <span class="text-2xs uppercase text-emerald-400">REPORT LOCKED</span>
+                    <span class="text-2xs uppercase text-emerald-400 shrink-0">REPORT LOCKED</span>
                   </div>
-                  <span class="text-2xs text-rail-muted block mt-1"
+                  <span class="text-2xs text-rail-muted block mt-1 break-words"
                     >CAP Synoptic: Invasive Ductal Carcinoma · Nottingham Grade II</span
                   >
                 </div>
 
                 <!-- Discipline 2: Clinical Chemistry -->
                 <div class="border-l-2 border-sky-500 bg-rail-line/20 p-2.5">
-                  <div class="flex justify-between items-center">
-                    <span class="text-sky-400 font-semibold"
+                  <div class="flex flex-wrap justify-between items-center gap-1">
+                    <span class="text-sky-400 font-semibold break-words"
                       >CHEMICAL PATHOLOGY: Liver &amp; Renal Panel</span
                     >
-                    <span class="text-2xs uppercase text-sky-400">AUTOVERIFIED</span>
+                    <span class="text-2xs uppercase text-sky-400 shrink-0">AUTOVERIFIED</span>
                   </div>
-                  <div class="flex justify-between text-2xs text-rail-muted mt-1">
+                  <div class="flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-2xs text-rail-muted mt-1">
                     <span>Creatinine: 78 μmol/L (Norm)</span>
                     <span class="text-amber-400">Alk Phos: 168 U/L (Elevated ↑)</span>
                   </div>
@@ -1544,13 +1706,13 @@ const faqs = [
 
                 <!-- Discipline 3: Haematology -->
                 <div class="border-l-2 border-amber-500 bg-rail-line/20 p-2.5">
-                  <div class="flex justify-between items-center">
-                    <span class="text-amber-400 font-semibold"
+                  <div class="flex flex-wrap justify-between items-center gap-1">
+                    <span class="text-amber-400 font-semibold break-words"
                       >HAEMATOLOGY: Full Blood Count (FBC)</span
                     >
-                    <span class="text-2xs uppercase text-emerald-400">RELEASED</span>
+                    <span class="text-2xs uppercase text-emerald-400 shrink-0">RELEASED</span>
                   </div>
-                  <div class="flex justify-between text-2xs text-rail-muted mt-1">
+                  <div class="flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-2xs text-rail-muted mt-1">
                     <span>Hb: 11.8 g/dL</span>
                     <span>WBC: 6.4 × 10⁹/L</span>
                     <span>Platelets: 245 × 10⁹/L</span>
@@ -1559,22 +1721,22 @@ const faqs = [
 
                 <!-- Discipline 4: Microbiology -->
                 <div class="border-l-2 border-emerald-500 bg-rail-line/20 p-2.5">
-                  <div class="flex justify-between items-center">
-                    <span class="text-emerald-400 font-semibold"
+                  <div class="flex flex-wrap justify-between items-center gap-1">
+                    <span class="text-emerald-400 font-semibold break-words"
                       >MICROBIOLOGY: Blood Culture &amp; AST</span
                     >
-                    <span class="text-2xs uppercase text-emerald-400">NO GROWTH (48H)</span>
+                    <span class="text-2xs uppercase text-emerald-400 shrink-0">NO GROWTH (48H)</span>
                   </div>
-                  <span class="text-2xs text-rail-muted block mt-1"
+                  <span class="text-2xs text-rail-muted block mt-1 break-words"
                     >Automated incubation chamber log verified</span
                   >
                 </div>
 
                 <div
-                  class="pt-2 border-t border-rail-line flex items-center justify-between text-2xs text-rail-muted"
+                  class="pt-2 border-t border-rail-line flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-2xs text-rail-muted"
                 >
-                  <span>Tamper-Proof QR Seal: QR-9921-HP</span>
-                  <span class="text-emerald-400">Delivered via WhatsApp &amp; Portal</span>
+                  <span class="break-words">Tamper-Proof QR Seal: QR-9921-HP</span>
+                  <span class="text-emerald-400 shrink-0">Delivered via WhatsApp &amp; Portal</span>
                 </div>
               </div>
             </div>
@@ -1669,9 +1831,9 @@ const faqs = [
           v-show="activeDepartment === dept.id"
           class="mt-8 border border-line bg-raised p-6 sm:p-10 shadow-lift"
         >
-          <div class="grid items-center gap-10 lg:grid-cols-12">
+          <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
             <!-- Left Info -->
-            <div class="lg:col-span-6">
+            <div class="lg:col-span-6 min-w-0 w-full max-w-full">
               <div class="flex items-center gap-2">
                 <span
                   class="border px-2.5 py-0.5 font-mono text-2xs uppercase tracking-caps font-semibold"
@@ -1703,7 +1865,7 @@ const faqs = [
 
               <!-- Department KPI Highlight -->
               <div
-                class="mt-8 border border-line bg-canvas p-4 flex items-center justify-between font-mono text-xs"
+                class="mt-8 border border-line bg-canvas p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-mono text-xs"
               >
                 <div>
                   <span class="text-2xs text-muted uppercase tracking-caps block"
@@ -1714,17 +1876,17 @@ const faqs = [
                 <span class="text-2xs text-muted">{{ dept.statDesc }}</span>
               </div>
 
-              <div class="mt-6 flex items-center gap-3">
+              <div class="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <button
                   type="button"
-                  class="bg-accent px-5 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink transition hover:bg-accent/90"
-                  @click="isDemoModalOpen = true"
+                  class="bg-accent px-5 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink transition hover:bg-accent/90 text-center"
+                  @click="openDemo('DEMO')"
                 >
                   See {{ dept.shortName }} in Action
                 </button>
                 <button
                   type="button"
-                  class="border border-line bg-surface px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-ink transition hover:bg-canvas"
+                  class="border border-line bg-surface px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-ink transition hover:bg-canvas text-center"
                   @click="isPersonaDrawerOpen = true"
                 >
                   Test Staff Persona
@@ -1733,7 +1895,7 @@ const faqs = [
             </div>
 
             <!-- Right Screenshot Preview -->
-            <div class="lg:col-span-6">
+            <div class="lg:col-span-6 min-w-0 w-full max-w-full">
               <div
                 class="relative overflow-hidden border border-line bg-rail text-rail-ink shadow-lift"
               >
@@ -1765,15 +1927,16 @@ const faqs = [
 
     <!-- INTERACTIVE 7-STATION SPECIMEN JOURNEY SIMULATOR -->
     <!-- INTERACTIVE MULTI-DISCIPLINE SPECIMEN JOURNEY & BENCHTOP SIMULATOR -->
-    <section id="custody" class="scroll-mt-20 border-b border-line bg-surface py-16 lg:py-24">
-      <div class="mx-auto max-w-shell px-4 sm:px-6 lg:px-8">
+    <section id="custody" class="scroll-mt-20 border-b border-line bg-surface py-16 lg:py-24 w-full max-w-full overflow-hidden">
+      <div class="mx-auto max-w-shell px-4 sm:px-6 lg:px-8 w-full max-w-full min-w-0">
         <!-- Section Header -->
         <div class="text-center max-w-3xl mx-auto">
           <div
-            class="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 font-mono text-2xs uppercase tracking-caps text-accent font-semibold mb-3"
+            class="inline-flex max-w-full items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 font-mono text-2xs uppercase tracking-caps text-accent font-semibold mb-3"
           >
-            <span class="h-2 w-2 rounded-full bg-accent animate-ping" />
-            <span>Interactive Multi-Discipline Custody Simulator</span>
+            <span class="h-2 w-2 shrink-0 rounded-full bg-accent animate-ping" />
+            <span class="hidden xs:inline">Interactive Multi-Discipline Custody Simulator</span>
+            <span class="xs:hidden">Custody Simulator</span>
           </div>
           <h2 class="display mt-1 text-3xl sm:text-4xl lg:text-5xl text-ink">
             Simulate Specimen Chain of Custody Across All 5 Units
@@ -1940,7 +2103,7 @@ const faqs = [
         </div>
 
         <!-- 3. STAGE SELECTOR STRIP -->
-        <div class="mt-8 overflow-x-auto pb-4 scroll-area">
+        <div class="mt-8 w-full max-w-full min-w-0 overflow-x-auto pb-4 scroll-area">
           <div class="flex gap-2.5 min-w-max">
             <button
               v-for="(st, idx) in unitStations"
@@ -2001,9 +2164,9 @@ const faqs = [
             class="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-accent to-transparent animate-pulse shadow-[0_0_15px_rgba(255,111,71,1)]"
           />
 
-          <div class="grid items-center gap-10 lg:grid-cols-12">
+          <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
             <!-- Left: Bench Terminal & Interactive Scanner -->
-            <div class="lg:col-span-6">
+            <div class="lg:col-span-6 min-w-0 w-full max-w-full">
               <!-- Department & State Chip -->
               <div class="flex flex-wrap items-center gap-2">
                 <span
@@ -2032,19 +2195,19 @@ const faqs = [
                 class="mt-6 rounded-lg border border-line bg-canvas p-4 font-mono text-xs shadow-xs"
               >
                 <!-- Barcode Payload & Scan Status -->
-                <div class="flex items-center justify-between border-b border-line/60 pb-3">
-                  <div class="flex items-center gap-2">
-                    <span class="text-muted uppercase tracking-caps text-2xs"
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line/60 pb-3">
+                  <div class="flex items-center gap-2 min-w-0 flex-wrap">
+                    <span class="text-muted uppercase tracking-caps text-2xs shrink-0"
                       >Barcode Payload:</span
                     >
                     <span
-                      class="text-ink font-bold bg-raised px-2 py-0.5 rounded border border-line/60"
+                      class="text-ink font-bold bg-raised px-2 py-0.5 rounded border border-line/60 break-all"
                     >
                       {{ activeStation.barcode }}
                     </span>
                   </div>
                   <span
-                    class="rounded-full px-2 py-0.5 text-2xs font-semibold"
+                    class="self-start sm:self-auto rounded-full px-2 py-0.5 text-2xs font-semibold shrink-0"
                     :class="
                       isScanningSimulated
                         ? 'bg-accent text-accent-ink animate-bounce'
@@ -2058,7 +2221,7 @@ const faqs = [
                 <!-- State Machine Guarantee -->
                 <div class="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <span class="text-muted uppercase tracking-caps text-2xs">System Guarantee:</span>
-                  <span class="text-emerald-600 dark:text-emerald-400 font-semibold text-right">
+                  <span class="text-emerald-600 dark:text-emerald-400 font-semibold sm:text-right">
                     {{ activeStation.highlight }}
                   </span>
                 </div>
@@ -2107,7 +2270,7 @@ const faqs = [
             </div>
 
             <!-- Right: Software Screen Preview -->
-            <div class="lg:col-span-6">
+            <div class="lg:col-span-6 min-w-0 w-full max-w-full">
               <div
                 class="relative overflow-hidden rounded-lg border border-line bg-rail text-rail-ink shadow-lift"
               >
@@ -2115,13 +2278,13 @@ const faqs = [
                 <div
                   class="flex items-center justify-between border-b border-rail-line bg-rail px-4 py-2.5 font-mono text-2xs uppercase tracking-caps text-rail-muted"
                 >
-                  <div class="flex items-center gap-2">
-                    <span class="h-2.5 w-2.5 rounded-full bg-red-500/80" />
-                    <span class="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
-                    <span class="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
-                    <span class="ml-2 font-semibold text-rail-ink">Actual Software Interface</span>
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-red-500/80" />
+                    <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500/80" />
+                    <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500/80" />
+                    <span class="ml-2 font-semibold text-rail-ink truncate">Actual Software Interface</span>
                   </div>
-                  <span class="text-accent font-semibold">{{
+                  <span class="text-accent font-semibold shrink-0">{{
                     activeStation.id.toUpperCase()
                   }}</span>
                 </div>
@@ -2202,8 +2365,8 @@ const faqs = [
     <!-- ISO 15189, QUALITY CONTROL & WESTGARD RULES -->
     <section id="quality" class="scroll-mt-20 border-b border-line bg-canvas py-16 lg:py-24">
       <div class="mx-auto max-w-shell px-4 sm:px-6 lg:px-8">
-        <div class="grid items-center gap-12 lg:grid-cols-12">
-          <div class="lg:col-span-5">
+        <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
+          <div class="lg:col-span-5 min-w-0 w-full max-w-full">
             <span class="font-mono text-2xs uppercase tracking-caps text-accent font-semibold"
               >Laboratory Accreditation</span
             >
@@ -2247,7 +2410,7 @@ const faqs = [
             </div>
           </div>
 
-          <div class="lg:col-span-7">
+          <div class="lg:col-span-7 min-w-0 w-full max-w-full">
             <div
               class="relative overflow-hidden border border-line bg-rail text-rail-ink shadow-lift"
             >
@@ -2265,7 +2428,7 @@ const faqs = [
                     class="h-auto w-full object-cover"
                   />
                 </div>
-                <div class="mt-6 grid grid-cols-3 gap-3 font-mono text-xs text-rail-muted">
+                <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs text-rail-muted">
                   <div class="bg-rail-line/30 p-3">
                     <span class="block text-2xs uppercase tracking-caps">Westgard 1₃s Rule</span>
                     <span class="mt-1 block text-emerald-400 font-bold">PASSED</span>
@@ -2303,9 +2466,9 @@ const faqs = [
         </div>
 
         <div class="mt-12 max-w-4xl mx-auto border border-line bg-raised p-6 sm:p-10 shadow-lift">
-          <div class="grid gap-8 lg:grid-cols-2 items-center">
+          <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 items-center">
             <!-- Left: Sliders -->
-            <div class="space-y-6">
+            <div class="space-y-6 min-w-0 w-full max-w-full">
               <div>
                 <div
                   class="flex items-center justify-between font-mono text-xs uppercase tracking-wide"
@@ -2374,7 +2537,7 @@ const faqs = [
             </div>
 
             <!-- Right: Results Card -->
-            <div class="border border-line bg-surface p-6 sm:p-8">
+            <div class="border border-line bg-surface p-6 sm:p-8 min-w-0 w-full max-w-full">
               <span class="font-mono text-2xs uppercase tracking-caps text-accent font-semibold"
                 >Projected Laboratory Gains</span
               >
@@ -2431,11 +2594,190 @@ const faqs = [
               <button
                 type="button"
                 class="mt-8 w-full bg-ink text-surface py-3 font-mono text-xs uppercase tracking-wider font-semibold transition hover:bg-ink/80"
-                @click="isDemoModalOpen = true"
+                @click="openDemo('DEMO')"
               >
                 Validate ROI with Your Hospital Data
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DEPARTMENT-SPECIFIC SANDBOX -->
+    <section id="test-demo" class="scroll-mt-20 border-b border-line bg-surface py-16 lg:py-20">
+      <div class="mx-auto max-w-shell px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto">
+          <span class="font-mono text-2xs uppercase tracking-caps text-accent font-semibold"
+            >Test the demo by department</span
+          >
+          <h2 class="display mt-3 text-3xl sm:text-4xl text-ink">
+            One platform. Every laboratory department.
+          </h2>
+          <p class="mt-4 text-base text-muted">
+            Open a department-specific walkthrough or request sandbox credentials. The demo is not
+            limited to histopathology.
+          </p>
+        </div>
+        <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <article
+            v-for="account in departmentDemoAccounts"
+            :key="account.discipline"
+            class="flex flex-col border border-line bg-raised p-5"
+          >
+            <div class="flex items-center gap-2">
+              <AppIcon :name="account.icon as any" :size="16" class="text-accent" /><span
+                class="font-mono text-2xs uppercase tracking-caps text-accent"
+                >{{ account.discipline }}</span
+              >
+            </div>
+            <p class="mt-3 text-sm text-ink">{{ account.subtitle }}</p>
+            <div class="mt-4 border border-line bg-canvas p-3 font-mono text-[10px] text-muted">
+              <div>{{ account.email }}</div>
+              <div>{{ account.password }}</div>
+            </div>
+            <div class="mt-auto flex flex-col gap-2 pt-4">
+              <NuxtLink
+                :to="{ path: '/login', query: { demo: account.discipline } }"
+                class="border border-line-strong bg-raised px-3 py-2 text-center font-mono text-2xs uppercase tracking-wider text-ink hover:bg-canvas"
+                >Open live sandbox</NuxtLink
+              >
+              <button
+                type="button"
+                class="bg-accent/10 px-3 py-2 font-mono text-2xs uppercase tracking-wider text-accent"
+                @click="openDemo('DEMO', account.discipline)"
+              >
+                Book {{ account.discipline }} walkthrough
+              </button>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUPPORT & COMMERCIAL CONTACT -->
+    <section id="support" class="scroll-mt-20 border-b border-line bg-canvas py-16 lg:py-24">
+      <div class="mx-auto max-w-shell px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div class="min-w-0 w-full max-w-full">
+            <span class="font-mono text-2xs uppercase tracking-caps text-accent font-semibold"
+              >Support &amp; commercial</span
+            >
+            <h2 class="display mt-3 text-3xl sm:text-4xl text-ink">Talk to our laboratory team.</h2>
+            <p class="mt-4 text-base leading-relaxed text-muted">
+              Whether you run a standalone laboratory or a hospital group, we will help you scope
+              deployment, data migration, instrument interfaces and staff training.
+            </p>
+            <div class="mt-8 space-y-3 font-mono text-xs text-muted">
+              <a
+                href="mailto:support@lims.africa"
+                class="flex items-center gap-3 border border-line bg-raised p-4 hover:border-accent hover:text-ink"
+                ><AppIcon name="send" :size="16" class="text-accent" /> support@lims.africa</a
+              >
+              <a
+                href="mailto:sales@lims.africa"
+                class="flex items-center gap-3 border border-line bg-raised p-4 hover:border-accent hover:text-ink"
+                ><AppIcon name="billing" :size="16" class="text-accent" /> sales@lims.africa</a
+              >
+              <a
+                href="https://wa.me/2348025550198"
+                target="_blank"
+                rel="noopener"
+                class="flex items-center gap-3 border border-line bg-raised p-4 hover:border-accent hover:text-ink"
+                ><AppIcon name="external" :size="16" class="text-accent" /> WhatsApp the
+                implementation desk</a
+              >
+            </div>
+            <div class="mt-8 border border-accent/30 bg-accent/10 p-5">
+              <p class="font-mono text-2xs uppercase tracking-caps text-accent">Commercial model</p>
+              <p class="mt-2 text-sm text-ink">
+                <strong>One month free trial</strong> after a scoping consultation. No card
+                required. Deployment, data sovereignty and instrument integration are agreed before
+                activation.
+              </p>
+              <button
+                type="button"
+                class="mt-4 bg-accent px-4 py-2.5 font-mono text-2xs font-semibold uppercase tracking-wider text-accent-ink"
+                @click="openDemo('TRIAL')"
+              >
+                Request 30-day trial
+              </button>
+            </div>
+          </div>
+          <div class="border border-line bg-raised p-6 sm:p-8 min-w-0 w-full max-w-full">
+            <div v-if="supportSubmitted" class="py-10 text-center">
+              <div
+                class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500"
+              >
+                <AppIcon name="check" :size="24" />
+              </div>
+              <h3 class="display mt-4 text-2xl text-ink">Support request received</h3>
+              <p class="mt-2 text-sm text-muted">
+                Our team will reply to {{ supportForm.email }} within one business day.
+              </p>
+            </div>
+            <form v-else class="space-y-4" @submit.prevent="submitSupport">
+              <div>
+                <p class="label-caps">Contact support</p>
+                <p class="mt-1 text-xs text-muted">
+                  Tell us what you need. This creates a tracked support enquiry for the platform
+                  team.
+                </p>
+              </div>
+              <FormField label="Hospital / laboratory" for-id="support-org" required
+                ><input
+                  id="support-org"
+                  v-model="supportForm.organizationName"
+                  class="input"
+                  placeholder="Organization name"
+              /></FormField>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <FormField label="Your name" for-id="support-name" required
+                  ><input
+                    id="support-name"
+                    v-model="supportForm.contactName"
+                    class="input" /></FormField
+                ><FormField label="Email" for-id="support-email" required
+                  ><input id="support-email" v-model="supportForm.email" type="email" class="input"
+                /></FormField>
+              </div>
+              <FormField label="Phone / WhatsApp" for-id="support-phone"
+                ><input id="support-phone" v-model="supportForm.phone" class="input"
+              /></FormField>
+              <FormField label="How can we help?" for-id="support-message">
+                <textarea
+                  id="support-message"
+                  v-model="supportForm.message"
+                  rows="4"
+                  class="textarea"
+                  placeholder="Deployment, migration, instrument interface, pricing, training..."
+                />
+              </FormField>
+              <p
+                v-if="supportError"
+                class="border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-600 dark:text-red-300"
+              >
+                {{ supportError }}
+              </p>
+              <button
+                type="submit"
+                class="w-full bg-accent px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink disabled:opacity-50"
+                :disabled="
+                  supportSubmitting ||
+                  !supportForm.organizationName ||
+                  !supportForm.contactName ||
+                  !supportForm.email
+                "
+              >
+                {{ supportSubmitting ? 'Sending…' : 'Send support request' }}
+              </button>
+              <p class="text-center text-[10px] text-muted">
+                Prefer email?
+                <a href="mailto:support@lims.africa" class="text-accent underline"
+                  >support@lims.africa</a
+                >
+              </p>
+            </form>
           </div>
         </div>
       </div>
@@ -2500,7 +2842,7 @@ const faqs = [
             <button
               type="button"
               class="bg-accent px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink transition hover:bg-accent/90"
-              @click="isDemoModalOpen = true"
+              @click="openDemo('DEMO')"
             >
               Schedule Clinical Consultation
             </button>
@@ -2537,7 +2879,7 @@ const faqs = [
           <button
             type="button"
             class="bg-accent px-8 py-3.5 font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink shadow-lift transition hover:bg-accent/90"
-            @click="isDemoModalOpen = true"
+            @click="openDemo('DEMO')"
           >
             Schedule On-Site or Virtual Demo
           </button>
@@ -2637,7 +2979,13 @@ const faqs = [
             >&copy; {{ new Date().getFullYear() }} Multi-Discipline Medical Laboratory LIMS. All
             rights reserved.</span
           >
-          <div class="flex items-center gap-4">
+          <div
+            class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center sm:justify-end"
+          >
+            <a href="#support" class="text-accent hover:underline">Support</a>
+            <span>·</span>
+            <a href="mailto:support@lims.africa" class="hover:text-ink">support@lims.africa</a>
+            <span>·</span>
             <span class="text-accent">ISO 15189:2022 Aligned</span>
             <span>·</span>
             <span>CAP Protocol Compliant</span>
@@ -2651,8 +2999,16 @@ const faqs = [
     <!-- INTERACTIVE DEMO REQUEST MODAL -->
     <AppModal
       :open="isDemoModalOpen"
-      title="Request a Hospital Demonstration"
-      description="Schedule a 20-minute clinical walkthrough tailored to your hospital's laboratory departments."
+      :title="
+        demoLeadType === 'TRIAL'
+          ? 'Start your one-month free trial'
+          : 'Request a Hospital Demonstration'
+      "
+      :description="
+        demoLeadType === 'TRIAL'
+          ? 'Tell us about your laboratory. We will confirm scope, then activate a 30-day trial after a short consultation.'
+          : 'Schedule a 20-minute clinical walkthrough tailored to your hospital\'s laboratory departments.'
+      "
       size="lg"
       @close="resetDemoModal"
     >
@@ -2689,17 +3045,19 @@ const faqs = [
             <label class="block font-mono text-2xs uppercase tracking-caps text-muted mb-1"
               >Your Clinical Role</label
             >
-            <select
+            <SearchSelect
               v-model="demoForm.clinicalRole"
-              class="w-full border border-line bg-canvas p-2.5 text-sm text-ink focus:border-accent focus:outline-none"
-            >
-              <option>Chief Medical Laboratory Scientist (CMLS)</option>
-              <option>Consultant Pathologist / Histopathologist</option>
-              <option>Chief Medical Director (CMD) / Hospital Board</option>
-              <option>Laboratory Manager / Quality Officer</option>
-              <option>Head of Hospital IT / Informatics</option>
-              <option>Private Diagnostic Center Director</option>
-            </select>
+              :options="roleOptions"
+              placeholder="Select your role"
+            />
+            <input
+              v-if="demoForm.clinicalRole === 'Other'"
+              v-model="roleOther"
+              type="text"
+              maxlength="120"
+              placeholder="e.g. Head of Laboratory Services"
+              class="mt-2 w-full border border-accent/50 bg-canvas p-2.5 text-sm text-ink focus:border-accent focus:outline-none"
+            />
           </div>
           <div>
             <label class="block font-mono text-2xs uppercase tracking-caps text-muted mb-1"
@@ -2731,15 +3089,19 @@ const faqs = [
             <label class="block font-mono text-2xs uppercase tracking-caps text-muted mb-1"
               >Monthly Test Volume</label
             >
-            <select
+            <SearchSelect
               v-model="demoForm.monthlyVolume"
-              class="w-full border border-line bg-canvas p-2.5 text-sm text-ink focus:border-accent focus:outline-none"
-            >
-              <option>&lt; 300 tests / month</option>
-              <option>300 - 1,000 tests / month</option>
-              <option>1,000 - 5,000 tests / month</option>
-              <option>5,000+ tests / month (Tertiary Centre)</option>
-            </select>
+              :options="volumeOptions"
+              placeholder="Select monthly volume"
+            />
+            <input
+              v-if="demoForm.monthlyVolume === 'Other'"
+              v-model="volumeOther"
+              type="text"
+              maxlength="80"
+              placeholder="e.g. 12,000 tests / month across 4 labs"
+              class="mt-2 w-full border border-accent/50 bg-canvas p-2.5 text-sm text-ink focus:border-accent focus:outline-none"
+            />
           </div>
         </div>
 
@@ -2771,6 +3133,13 @@ const faqs = [
           </div>
         </div>
 
+        <div
+          v-if="demoError"
+          class="border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-600 dark:text-red-300"
+        >
+          {{ demoError }}
+        </div>
+
         <div>
           <label class="block font-mono text-2xs uppercase tracking-caps text-muted mb-1"
             >Specific Workflow Questions or Current EMR</label
@@ -2791,12 +3160,21 @@ const faqs = [
         >
           <AppIcon name="check" size="28" />
         </div>
-        <h3 class="display mt-4 text-2xl text-ink">Demonstration Request Received</h3>
+        <h3 class="display mt-4 text-2xl text-ink">
+          {{
+            demoLeadType === 'TRIAL' ? 'Trial request received' : 'Demonstration Request Received'
+          }}
+        </h3>
         <p class="mt-2 text-sm text-muted max-w-md mx-auto">
           Thank you, <strong class="text-ink">{{ demoForm.contactName || 'Doctor' }}</strong
           >. Our clinical informatics team will contact you at
-          <strong class="text-ink">{{ demoForm.email }}</strong> within 4 business hours to schedule
-          your live walkthrough of {{ demoForm.hospitalName }}.
+          <strong class="text-ink">{{ demoForm.email }}</strong> within 4 business hours to
+          {{
+            demoLeadType === 'TRIAL'
+              ? 'confirm scope and activate your 30-day trial'
+              : 'schedule your live walkthrough'
+          }}
+          for {{ demoForm.hospitalName }}.
         </p>
 
         <div
@@ -2840,10 +3218,16 @@ const faqs = [
           <button
             type="button"
             class="bg-accent px-5 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink disabled:opacity-50"
-            :disabled="!demoForm.hospitalName || !demoForm.email"
+            :disabled="demoSubmitting || !demoForm.hospitalName || !demoForm.email"
             @click="submitDemoRequest"
           >
-            Confirm Walkthrough Request
+            {{
+              demoSubmitting
+                ? 'Sending…'
+                : demoLeadType === 'TRIAL'
+                  ? 'Request 30-day trial'
+                  : 'Confirm Walkthrough Request'
+            }}
           </button>
         </div>
       </template>
@@ -2863,8 +3247,8 @@ const faqs = [
           :key="persona.email"
           class="border border-line bg-surface p-4 transition hover:border-line-strong"
         >
-          <div class="flex items-start justify-between gap-4">
-            <div>
+          <div class="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+            <div class="min-w-0">
               <span
                 class="inline-block border border-accent/30 bg-accent-soft/40 px-2 py-0.5 font-mono text-2xs uppercase tracking-caps text-accent font-semibold"
               >
@@ -2902,11 +3286,11 @@ const faqs = [
       </div>
 
       <template #footer>
-        <div class="flex justify-between items-center w-full">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 w-full">
           <span class="font-mono text-2xs text-muted">Passwords are for sandbox evaluation.</span>
           <button
             type="button"
-            class="border border-line bg-surface px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink"
+            class="self-end sm:self-auto border border-line bg-surface px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink"
             @click="isPersonaDrawerOpen = false"
           >
             Close
