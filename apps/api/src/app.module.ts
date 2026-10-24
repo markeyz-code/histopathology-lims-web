@@ -28,6 +28,7 @@ import { MicrobiologyModule } from './disciplines/microbiology/microbiology.modu
 import { QualityModule } from './core/quality/quality.module';
 import { InstrumentsModule } from './extensions/instruments/instruments.module';
 import { PlatformModule } from './core/platform/platform.module';
+import { LeadsModule } from './core/leads/leads.module';
 import { DisciplineRegistryModule } from './core/discipline/discipline.module';
 import { DisciplineGuard } from './core/discipline/discipline.guard';
 import { DisciplinesModule } from './disciplines/disciplines.module';
@@ -138,6 +139,7 @@ import { WsiModule } from './extensions/wsi/wsi.module';
     QualityModule,
     InstrumentsModule,
     PlatformModule,
+    LeadsModule,
     ResultsModule,
     DisciplineRegistryModule,
     DisciplinesModule,

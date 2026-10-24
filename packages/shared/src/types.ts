@@ -12,6 +12,8 @@ import type {
   InstrumentMessageStatus,
   InstrumentProtocol,
   NcSeverity,
+  LeadStatus,
+  LeadType,
   OrganizationStatus,
   OrganizationType,
   SubscriptionPlan,
@@ -1232,4 +1234,19 @@ export interface OnboardingResult {
   admin: UserSummary;
   inviteUrl: string;
   catalogueTests: number;
+}
+
+export interface Lead {
+  id: string;
+  type: LeadType;
+  organizationName: string;
+  contactName: string;
+  email: string;
+  phone: string | null;
+  role: string | null;
+  departments: string[];
+  monthlyVolume: string | null;
+  message: string | null;
+  status: LeadStatus;
+  createdAt: string;
 }

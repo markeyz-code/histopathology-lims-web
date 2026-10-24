@@ -864,3 +864,9 @@ export const ONBOARDING_STEPS = [
   'live',
 ] as const;
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
+
+export const LEAD_TYPES = ['DEMO', 'TRIAL', 'SUPPORT'] as const;
+export type LeadType = (typeof LEAD_TYPES)[number];
+
+export const LEAD_STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'CLOSED'] as const;
+export type LeadStatus = (typeof LEAD_STATUSES)[number];

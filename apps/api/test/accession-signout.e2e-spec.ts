@@ -1598,6 +1598,34 @@ describe('Accession to sign-out (e2e)', () => {
     expect(overview.body.organizations).toBeGreaterThanOrEqual(1);
   });
 
+  it('captures a public trial enquiry and lets the super admin qualify it', async () => {
+    const lead = await request(http)
+      .post('/api/leads')
+      .send({
+        type: 'TRIAL',
+        organizationName: 'E2E Diagnostics',
+        contactName: 'Dr Trial',
+        email: `trial-${unique}@e2e.test`,
+        phone: '+234 800 000 0000',
+        departments: ['Chemical Pathology', 'Medical Microbiology'],
+        monthlyVolume: '300 - 1,000 tests / month',
+        message: 'Interested in a one-month trial.',
+      })
+      .expect(201);
+    expect(lead.body.status).toBe('NEW');
+    const list = await request(http)
+      .get('/api/super-admin/leads')
+      .set(auth(tokens.superadmin))
+      .expect(200);
+    expect(list.body.some((item: { id: string }) => item.id === lead.body.id)).toBe(true);
+    const updated = await request(http)
+      .patch(`/api/super-admin/leads/${lead.body.id}`)
+      .set(auth(tokens.superadmin))
+      .send({ status: 'CONTACTED' })
+      .expect(200);
+    expect(updated.body.status).toBe('CONTACTED');
+  });
+
   it('keeps the worklist and dashboard tenant-scoped and TAT-aware', async () => {
     const worklist = await request(http)
       .get('/api/worklist')

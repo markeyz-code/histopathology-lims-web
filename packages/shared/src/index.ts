@@ -28,3 +28,4 @@ export * from './schemas/preanalytics';
 export * from './schemas/microbiology';
 export * from './schemas/quality';
 export * from './schemas/platform';
+export * from './schemas/lead';
