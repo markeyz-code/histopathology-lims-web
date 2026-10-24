@@ -72,6 +72,23 @@ export class PortalController {
     return this.portal.getCase(id, user.id, user.email);
   }
 
+  @Get('results/:id/pdf')
+  @Roles('REFERRER', 'LAB_ADMIN', 'SUPER_ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Download a released non-histopathology result PDF' })
+  async resultPdf(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const file = await this.portal.getResultPdf(id, user.id, user.email);
+    response.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${file.filename}"`,
+    });
+    return new StreamableFile(createReadStream(file.path));
+  }
+
   @Get('cases/:id/report.pdf')
   @Roles('REFERRER', 'LAB_ADMIN', 'SUPER_ADMIN')
   @ApiBearerAuth()

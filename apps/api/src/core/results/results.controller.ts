@@ -1,16 +1,32 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Res,
+  StreamableFile,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { createReadStream } from 'node:fs';
+import type { Response } from 'express';
 import type { Discipline } from '@lims/shared';
 import type { AuthenticatedUser } from '../../common/auth/authenticated-user';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/auth.decorators';
 import { ResultsService } from './results.service';
+import { ResultPdfService } from './result-pdf.service';
 
 @ApiTags('Results')
 @ApiBearerAuth()
 @Controller('results')
 export class ResultsController {
-  constructor(private readonly results: ResultsService) {}
+  constructor(
+    private readonly results: ResultsService,
+    private readonly resultPdf: ResultPdfService,
+  ) {}
 
   @Get('worklist')
   @Roles('SUPER_ADMIN', 'LAB_ADMIN', 'SCIENTIST', 'TECHNOLOGIST', 'PATHOLOGIST')
@@ -38,6 +54,36 @@ export class ResultsController {
   @Roles('SUPER_ADMIN', 'LAB_ADMIN', 'SCIENTIST', 'TECHNOLOGIST')
   create(@Body() body: { testRequestId: string }, @CurrentUser() user: AuthenticatedUser) {
     return this.results.create(body.testRequestId, user);
+  }
+
+  @Get('cumulative/:patientId/pdf')
+  @Roles('SUPER_ADMIN', 'LAB_ADMIN', 'SCIENTIST', 'TECHNOLOGIST', 'PATHOLOGIST')
+  async cumulativePdf(
+    @Param('patientId') patientId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const report = await this.results.cumulative(patientId);
+    const file = await this.resultPdf.generateCumulative(report, user.labId);
+    response.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${file.filename}"`,
+    });
+    return new StreamableFile(createReadStream(file.path));
+  }
+
+  @Get(':id/pdf')
+  @Roles('SUPER_ADMIN', 'LAB_ADMIN', 'SCIENTIST', 'TECHNOLOGIST', 'PATHOLOGIST')
+  async pdf(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const file = await this.resultPdf.generateAndStore(id);
+    response.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${file.filename}"`,
+    });
+    return new StreamableFile(createReadStream(file.path));
   }
 
   @Get(':id/versions')

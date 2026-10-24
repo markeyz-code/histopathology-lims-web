@@ -7,6 +7,8 @@ import { LabModelName, LabSchema } from '../../core/labs/lab.schema';
 import { NotificationsModule } from '../../core/notifications/notifications.module';
 import { PatientModelName, PatientSchema } from '../../core/patients/patient.schema';
 import { PdfModule } from '../../disciplines/histopathology/pdf/pdf.module';
+import { ResultsModule } from '../../core/results/results.module';
+import { ResultSetModelName, ResultSetSchema } from '../../core/results/result.schema';
 import { ReportAssemblerService } from '../../core/reports/report-assembler.service';
 import {
   ReportVersionModelName,
@@ -23,6 +25,7 @@ import { PortalService } from './portal.service';
     AuthModule,
     CustodyModule,
     PdfModule,
+    ResultsModule,
     NotificationsModule,
     MongooseModule.forFeature([
       { name: PortalTokenModelName, schema: PortalTokenSchema },
@@ -32,6 +35,7 @@ import { PortalService } from './portal.service';
       { name: PatientModelName, schema: PatientSchema },
       { name: ReportModelName, schema: ReportSchema },
       { name: ReportVersionModelName, schema: ReportVersionSchema },
+      { name: ResultSetModelName, schema: ResultSetSchema },
     ]),
   ],
   controllers: [PortalController],

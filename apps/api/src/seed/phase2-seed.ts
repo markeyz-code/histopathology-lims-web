@@ -506,6 +506,18 @@ export async function seedPhase2(connection: Connection, lab: SeedLab, now: Date
     updatedAt: new Date(now.getTime() - 2 * H),
   });
 
+  await connection.collection('collection_centres').insertOne({
+    labId,
+    code: 'IKEJA-HUB',
+    name: 'Ikeja collection hub',
+    address: '12 Oba Akran Avenue, Ikeja',
+    phone: '+234 802 555 0198',
+    homeCollection: true,
+    active: true,
+    createdAt: now,
+    updatedAt: now,
+  });
+
   // A small, realistic non-histopathology worklist so the new modules are visible in the demo.
   const patientSpecs = [
     {
@@ -585,10 +597,10 @@ export async function seedPhase2(connection: Connection, lab: SeedLab, now: Date
       clinicalDiagnosis: null,
       subspecialty: null,
       referringClinician: {
-        name: 'Dr Phase 2',
-        facility: 'Demo Clinic',
-        phone: null,
-        email: null,
+        name: 'Dr Bola Adeyemi',
+        facility: 'St Mary’s Specialist Clinic',
+        phone: '+234 803 441 2201',
+        email: 'referrer@clinic.ng',
         referrerUserId: null,
       },
       assignedPathologistId: null,

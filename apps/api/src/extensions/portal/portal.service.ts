@@ -31,8 +31,11 @@ import { PdfService } from '../../disciplines/histopathology/pdf/pdf.service';
 import { ReportAssemblerService } from '../../core/reports/report-assembler.service';
 import { ReportModelName, type ReportEntity } from '../../core/reports/report.schema';
 import { UserModelName, type UserEntity } from '../../core/users/user.schema';
+import { ResultSetModelName, type ResultSetEntity } from '../../core/results/result.schema';
+import { ResultPdfService } from '../../core/results/result-pdf.service';
 import { PortalTokenModelName, type PortalTokenEntity } from './portal-token.schema';
 import type { PortalRequestDto, PortalVerifyDto } from './dto/portal.dto';
+import type { PortalResultSummary } from '@lims/shared';
 
 @Injectable()
 export class PortalService {
@@ -43,11 +46,13 @@ export class PortalService {
     @InjectModel(CaseModelName) private readonly caseModel: Model<CaseEntity>,
     @InjectModel(PatientModelName) private readonly patientModel: Model<PatientEntity>,
     @InjectModel(ReportModelName) private readonly reportModel: Model<ReportEntity>,
+    @InjectModel(ResultSetModelName) private readonly resultModel: Model<ResultSetEntity>,
     private readonly auth: AuthService,
     private readonly notifications: NotificationService,
     private readonly assembler: ReportAssemblerService,
     private readonly custody: CustodyService,
     private readonly pdf: PdfService,
+    private readonly resultPdf: ResultPdfService,
     private readonly config: ConfigService,
   ) {}
 
@@ -197,10 +202,11 @@ export class PortalService {
 
   async getCase(caseId: string, userId: string, email: string): Promise<PortalCaseDetail> {
     const caseDoc = await this.findOwnedCase(caseId, userId, email);
-    const [patient, report, timeline] = await Promise.all([
+    const [patient, report, timeline, releasedResults] = await Promise.all([
       this.patientModel.findById(caseDoc.patientId).exec(),
       this.reportModel.findOne({ caseId: caseDoc._id }).exec(),
       this.custody.forCase(caseDoc._id.toString()),
+      this.releasedResults(caseDoc._id),
     ]);
     if (!patient) throw new NotFoundException('Case not found.');
     const summary = await this.toPortalSummary(caseDoc);
@@ -221,8 +227,20 @@ export class PortalService {
       clinicalHistory: caseDoc.clinicalHistory,
       clinicalDiagnosis: caseDoc.clinicalDiagnosis,
       report: reportDetail,
+      results: releasedResults,
       timeline,
     };
+  }
+
+  async getResultPdf(
+    resultId: string,
+    userId: string,
+    email: string,
+  ): Promise<{ path: string; filename: string }> {
+    const result = await this.resultModel.findById(resultId).exec();
+    if (!result || result.status !== 'RELEASED') throw new NotFoundException('Result not found.');
+    await this.findOwnedCase(result.caseId.toString(), userId, email);
+    return this.resultPdf.generateAndStore(resultId);
   }
 
   async getReportPdf(
@@ -253,9 +271,10 @@ export class PortalService {
   }
 
   private async toPortalSummary(caseDoc: CaseEntity): Promise<PortalCaseSummary> {
-    const [patient, report] = await Promise.all([
+    const [patient, report, results] = await Promise.all([
       this.patientModel.findById(caseDoc.patientId).exec(),
       this.reportModel.findOne({ caseId: caseDoc._id }).exec(),
+      this.releasedResults(caseDoc._id),
     ]);
     if (!patient) throw new NotFoundException('Case not found.');
     const released = Boolean(report?.releasedAt);
@@ -272,8 +291,26 @@ export class PortalService {
       releasedAt: report?.releasedAt ? report.releasedAt.toISOString() : null,
       priority: caseDoc.priority,
       reportAvailable: released,
+      resultsAvailable: results.length > 0,
+      releasedResultCount: results.length,
       downloadUrl: released && report ? `/portal/cases/${caseDoc._id.toString()}/report.pdf` : null,
     };
+  }
+
+  private async releasedResults(caseId: Types.ObjectId): Promise<PortalResultSummary[]> {
+    const results = await this.resultModel
+      .find({ caseId, status: 'RELEASED' })
+      .sort({ releasedAt: -1 })
+      .exec();
+    return results.map((result) => ({
+      id: result._id.toString(),
+      testCode: result.testCode,
+      testName: result.testName,
+      discipline: result.discipline,
+      verifiedAt: result.verifiedAt?.toISOString() ?? null,
+      releasedAt: (result.releasedAt ?? result.verifiedAt ?? result.createdAt).toISOString(),
+      downloadUrl: `/portal/results/${result._id.toString()}/pdf`,
+    }));
   }
 }
 

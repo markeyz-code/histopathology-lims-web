@@ -748,3 +748,20 @@ export type QcStatus = (typeof QC_STATUSES)[number];
 
 export const QC_LEVELS = ['LOW', 'NORMAL', 'HIGH'] as const;
 export type QcLevel = (typeof QC_LEVELS)[number];
+
+export const CONSIGNMENT_STATUSES = [
+  'CREATED',
+  'DISPATCHED',
+  'IN_TRANSIT',
+  'RECEIVED',
+  'REJECTED',
+] as const;
+export type ConsignmentStatus = (typeof CONSIGNMENT_STATUSES)[number];
+
+export const CONSIGNMENT_STATUS_LABELS: Record<ConsignmentStatus, string> = {
+  CREATED: 'Created',
+  DISPATCHED: 'Dispatched',
+  IN_TRANSIT: 'In transit',
+  RECEIVED: 'Received',
+  REJECTED: 'Rejected',
+};

@@ -24,6 +24,8 @@ export interface TestRequestEntity {
   priority: Priority;
   requestedBy: Types.ObjectId | null;
   requestedAt: Date;
+  collectionCentreId: Types.ObjectId | null;
+  consignmentId: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +41,8 @@ export const TestRequestSchema = new Schema<TestRequestEntity>(
     priority: { type: String, enum: PRIORITIES, required: true, default: 'ROUTINE' },
     requestedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     requestedAt: { type: Date, required: true, default: Date.now },
+    collectionCentreId: { type: Schema.Types.ObjectId, ref: 'CollectionCentre', default: null },
+    consignmentId: { type: Schema.Types.ObjectId, ref: 'Consignment', default: null },
   },
   baseSchemaOptions('test_requests'),
 );

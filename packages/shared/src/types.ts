@@ -3,6 +3,7 @@ import type {
   CaseStatus,
   CodingSystem,
   Discipline,
+  ConsignmentStatus,
   InvoiceStatus,
   QcLevel,
   QcStatus,
@@ -523,6 +524,16 @@ export interface NotificationRecord {
   metadata: Record<string, unknown>;
 }
 
+export interface PortalResultSummary {
+  id: string;
+  testCode: string;
+  testName: string;
+  discipline: Discipline;
+  verifiedAt: string | null;
+  releasedAt: string;
+  downloadUrl: string;
+}
+
 export interface PortalCaseSummary {
   id: string;
   accessionNumber: string;
@@ -535,6 +546,8 @@ export interface PortalCaseSummary {
   releasedAt: string | null;
   priority: Priority;
   reportAvailable: boolean;
+  resultsAvailable: boolean;
+  releasedResultCount: number;
   downloadUrl: string | null;
 }
 
@@ -544,6 +557,7 @@ export interface PortalCaseDetail extends PortalCaseSummary {
   clinicalHistory: string;
   clinicalDiagnosis: string | null;
   report: ReportDetail | null;
+  results: PortalResultSummary[];
   timeline: CustodyEvent[];
 }
 
@@ -926,4 +940,32 @@ export interface CumulativeReport {
   to: string;
   disciplines: Discipline[];
   results: CumulativeResult[];
+}
+
+export interface CollectionCentre {
+  id: string;
+  code: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  homeCollection: boolean;
+  active: boolean;
+}
+
+export interface Consignment {
+  id: string;
+  code: string;
+  centreId: string;
+  centreName: string;
+  riderName: string | null;
+  riderPhone: string | null;
+  status: ConsignmentStatus;
+  testRequestIds: string[];
+  testRequestCount: number;
+  dispatchedAt: string | null;
+  receivedAt: string | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
+  notes: string | null;
+  createdAt: string;
 }

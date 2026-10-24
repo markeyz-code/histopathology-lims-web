@@ -24,3 +24,4 @@ export * from './schemas/catalog';
 export * from './schemas/results';
 export * from './schemas/rules';
 export * from './schemas/qc';
+export * from './schemas/preanalytics';

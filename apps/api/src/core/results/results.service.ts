@@ -26,6 +26,7 @@ import { CatalogService } from '../catalog/catalog.service';
 import { CaseModelName, type CaseEntity } from '../cases/case.schema';
 import { PatientModelName, type PatientEntity } from '../patients/patient.schema';
 import { RulesService } from '../rules/rules.service';
+import { NotificationService } from '../notifications/notification.service';
 import { TestRequestsService } from '../test-requests/test-requests.service';
 import { TestRequestModelName, type TestRequestEntity } from '../test-requests/test-request.schema';
 import { UserModelName, type UserEntity } from '../users/user.schema';
@@ -61,6 +62,7 @@ export class ResultsService {
     private readonly rules: RulesService,
     private readonly testRequests: TestRequestsService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationService,
   ) {}
 
   async worklist(discipline: Discipline, user: AuthenticatedUser): Promise<ResultWorklistItem[]> {
@@ -326,7 +328,9 @@ export class ResultsService {
         session,
       );
     });
-    return this.getById(id);
+    const released = await this.getById(id);
+    await this.notifyRelease(released).catch(() => undefined);
+    return released;
   }
 
   async acknowledgeCritical(
@@ -646,6 +650,34 @@ export class ResultsService {
       createdAt: result.createdAt.toISOString(),
       updatedAt: result.updatedAt.toISOString(),
     };
+  }
+
+  private async notifyRelease(result: ResultSet): Promise<void> {
+    const caseDoc = await this.caseModel.findById(result.caseId).exec();
+    if (!caseDoc) return;
+    const email = caseDoc.referringClinician.email;
+    const phone = caseDoc.referringClinician.phone;
+    await this.notifications.send({
+      labId: caseDoc.labId.toString(),
+      type: 'RESULT_RELEASED',
+      title: `Result released — ${result.accessionNumber}`,
+      body: `${result.testName} for ${result.patientName} (${result.accessionNumber}) has been verified and released.`,
+      caseId: result.caseId,
+      entityType: 'ResultSet',
+      entityId: result.id,
+      userId: caseDoc.referringClinician.referrerUserId?.toString() ?? null,
+      channels: [
+        ...(caseDoc.referringClinician.referrerUserId ? (['IN_APP'] as const) : []),
+        ...(email ? (['EMAIL'] as const) : []),
+        ...(phone ? (['WHATSAPP'] as const) : []),
+      ],
+      recipient: {
+        email: email ?? undefined,
+        phone: phone ?? undefined,
+        name: caseDoc.referringClinician.name,
+      },
+      metadata: { testCode: result.testCode, discipline: result.discipline },
+    });
   }
 
   private async toVersion(version: ResultVersionEntity): Promise<ResultVersion> {
