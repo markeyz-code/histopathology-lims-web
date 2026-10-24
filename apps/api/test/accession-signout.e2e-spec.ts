@@ -1509,6 +1509,30 @@ describe('Accession to sign-out (e2e)', () => {
     expect(reported.body.status).toBe('REPORTED');
   });
 
+  it('ingests an ASTM instrument message and matches the accession', async () => {
+    const message = [
+      'H|\\^&|||Analyzer|LIMS',
+      'P|1||MRN||Doe^Jane',
+      'O|1|HAE-2026-000001|||',
+      'R|1|^^^HB^Haemoglobin|11.8|g/dL||N',
+      'L|1|N',
+    ].join('\r');
+    const ingested = await request(http)
+      .post('/api/instruments/messages')
+      .set(auth(tokens.technologist))
+      .send({ protocol: 'ASTM', message })
+      .expect(201);
+    expect(ingested.body.protocol).toBe('ASTM');
+    expect(ingested.body.status).toBe('MATCHED');
+    expect(ingested.body.accessionNumber).toBe('HAE-2026-000001');
+    expect(ingested.body.values[0].code).toBe('HB');
+    const messages = await request(http)
+      .get('/api/instruments/messages')
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(messages.body.some((item: { id: string }) => item.id === ingested.body.id)).toBe(true);
+  });
+
   it('keeps the worklist and dashboard tenant-scoped and TAT-aware', async () => {
     const worklist = await request(http)
       .get('/api/worklist')

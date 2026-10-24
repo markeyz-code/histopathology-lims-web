@@ -826,3 +826,15 @@ export const SEND_OUT_STATUSES = [
   'CANCELLED',
 ] as const;
 export type SendOutStatus = (typeof SEND_OUT_STATUSES)[number];
+
+export const INSTRUMENT_PROTOCOLS = ['ASTM', 'HL7'] as const;
+export type InstrumentProtocol = (typeof INSTRUMENT_PROTOCOLS)[number];
+
+export const INSTRUMENT_MESSAGE_STATUSES = [
+  'RECEIVED',
+  'MATCHED',
+  'UNMATCHED',
+  'PROCESSED',
+  'ERROR',
+] as const;
+export type InstrumentMessageStatus = (typeof INSTRUMENT_MESSAGE_STATUSES)[number];

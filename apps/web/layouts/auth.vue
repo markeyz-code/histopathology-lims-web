@@ -51,7 +51,7 @@
             class="flex items-center justify-between gap-4 font-mono text-[9px] uppercase tracking-[0.16em] text-rail-muted"
           >
             <span>Phase 2 / 3 · Tracking, portal &amp; interoperability</span>
-            <span>v5.0</span>
+            <span>v6.0</span>
           </div>
         </div>
       </aside>

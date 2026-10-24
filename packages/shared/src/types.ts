@@ -9,6 +9,8 @@ import type {
   CapaStatus,
   ConsignmentStatus,
   EquipmentStatus,
+  InstrumentMessageStatus,
+  InstrumentProtocol,
   NcSeverity,
   NcStatus,
   SendOutStatus,
@@ -1145,5 +1147,19 @@ export interface SendOut {
   receivedAt: string | null;
   reportedAt: string | null;
   resultSummary: string | null;
+  createdAt: string;
+}
+
+export interface InstrumentMessage {
+  id: string;
+  protocol: InstrumentProtocol;
+  labCode: string | null;
+  accessionNumber: string | null;
+  testCode: string | null;
+  patientName: string | null;
+  values: Array<{ code: string; value: string; unit: string | null }>;
+  status: InstrumentMessageStatus;
+  error: string | null;
+  rawMessage: string;
   createdAt: string;
 }

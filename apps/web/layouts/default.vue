@@ -282,7 +282,7 @@ onBeforeUnmount(() => {
         class="mx-auto flex w-full max-w-shell flex-col gap-1 border-t border-line px-4 py-4 font-mono text-[9px] uppercase tracking-[0.14em] text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
       >
         <div class="flex items-center gap-3">
-          <span>Laboratory LIMS · Phase 5</span>
+          <span>Laboratory LIMS · Phase 6</span>
           <span>·</span>
           <NuxtLink to="/landing" class="hover:text-accent transition-colors">
             Hospital Overview &amp; Landing
