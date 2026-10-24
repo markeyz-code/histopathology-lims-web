@@ -1,6 +1,6 @@
 # Multi-discipline Laboratory LIMS
 
-**Phase 2 — a multi-discipline LIMS with diagnostic results.** A shared-core laboratory information management system for general medical laboratories, designed Nigeria-first for low-resource, low-bandwidth settings. Histopathology is the most complete module. Phase 2 adds tenant-configurable test catalogues, versioned haematology and chemistry results, a safe rules engine, Westgard QC and cross-discipline cumulative reports. Microbiology remains a registered Phase 4 foundation.
+**Phase 3 — multi-discipline results, delivery and pre-analytical flow.** A shared-core laboratory information management system for general medical laboratories, designed Nigeria-first for low-resource, low-bandwidth settings. Histopathology is the most complete module. Phase 2 added tenant-configurable test catalogues, versioned haematology and chemistry results, a safe rules engine, Westgard QC and cross-discipline cumulative reports. Phase 3 adds multi-discipline result/cumulative PDFs, result delivery and referral-portal exposure, and the collection-centre/rider consignment chain. Microbiology remains Phase 4.
 
 Every laboratory enables only the disciplines it operates. Patient, case, specimen, custody, audit, worklist and report scaffolding are shared. Discipline modules contribute their own units, state machines, worklist configuration, result schemas, rules and report templates through a `DisciplineRegistry`.
 
@@ -21,8 +21,21 @@ Histopathology keeps the block-and-slide custody model: a specimen becomes casse
 | ![Billing](docs/screens/billing.jpg)                     | ![SNOMED and ICD-O-3 coding](docs/screens/report-coding.jpg)       |
 | **Result entry & rules**                                 | **Levey-Jennings QC**                                              |
 | ![Result entry](docs/screens/results.jpg)                | ![Quality control](docs/screens/qc.jpg)                            |
+| **Pre-analytical handoff**                               | **Referral results**                                               |
+| ![Pre-analytics](docs/screens/preanalytics.jpg)          | ![Portal results](docs/screens/portal-results.jpg)                 |
 
 ---
+
+## Phase 3 — reporting, delivery and pre-analytics
+
+- Per-result and cumulative PDFs for non-histopathology disciplines.
+- Result release notifications through the existing in-app/email/WhatsApp outbox.
+- Referrer portal access to released results and their PDFs.
+- Collection centres, home collection, consignment creation, rider dispatch and laboratory receipt.
+- Pre-analytics workspace at `/preanalytics` and PDF actions in results/cumulative views.
+- Existing invoice, payment and HMO claims modules retained and revalidated.
+
+Details: [docs/phase-3.md](docs/phase-3.md).
 
 ## Phase 2 — results, rules and QC
 
@@ -130,7 +143,7 @@ docker/       Mongo replica-set initialiser
 docs/         Architecture notes and screenshots
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the shared core, [docs/phase-2.md](docs/phase-2.md) for Phase 2, [docs/phase-1.5-migration.md](docs/phase-1.5-migration.md) for the discipline refactor and [docs/phase-2-3.md](docs/phase-2-3.md) for the already-built extension modules (legacy numbering).
+See [docs/architecture.md](docs/architecture.md) for the shared core, [docs/phase-2.md](docs/phase-2.md) for Phase 2, [docs/phase-3.md](docs/phase-3.md) for Phase 3, [docs/phase-1.5-migration.md](docs/phase-1.5-migration.md) for the discipline refactor and [docs/phase-2-3.md](docs/phase-2-3.md) for the already-built extension modules (legacy numbering).
 
 ### Domain hierarchy
 
@@ -305,6 +318,11 @@ GET    /api/users[/pathologists]                   GET  /api/labs/me
 GET    /api/audit                                  POST /api/maintenance/tat-check
 GET    /api/health  (public)                       Swagger at /docs
 
+Phase 3 additions:
+GET    /api/results/:id/pdf                        GET /api/results/cumulative/:patientId/pdf
+GET    /api/portal/results/:id/pdf                 GET/POST /api/preanalytics/centres
+GET/POST /api/preanalytics/consignments            POST dispatch|receive
+
 Phase 2 additions:
 GET    /api/catalog/tests | /panels                  POST/PATCH catalogue
 GET    /api/results/worklist                       POST /api/results
@@ -345,7 +363,7 @@ pnpm test:e2e
 pnpm verify
 ```
 
-The E2E suite (18 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
+The E2E suite (19 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
 
 - accessioning generates a formatted accession number and unique specimen barcode
 - role checks and invalid scan transitions reject correctly
@@ -368,6 +386,8 @@ The E2E suite (18 tests) starts an ephemeral MongoDB **replica set** with `mongo
 - critical potassium blocks verification until acknowledgement
 - QC runs produce accepted/rejected Westgard statuses
 - a released result appears in the cumulative patient report
+- result and cumulative PDFs are generated
+- a sample moves through collection centre → consignment → rider dispatch → laboratory receipt
 
 ## Design direction
 
