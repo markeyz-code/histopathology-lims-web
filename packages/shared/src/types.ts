@@ -3,7 +3,11 @@ import type {
   CaseStatus,
   CodingSystem,
   Discipline,
+  AstInterpretation,
+  AstMethod,
+  BreakpointStandard,
   ConsignmentStatus,
+  OrganismGram,
   InvoiceStatus,
   QcLevel,
   QcStatus,
@@ -968,4 +972,98 @@ export interface Consignment {
   rejectionReason: string | null;
   notes: string | null;
   createdAt: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 4 — microbiology
+// ─────────────────────────────────────────────────────────────
+
+export interface Organism {
+  id: string;
+  code: string;
+  name: string;
+  gram: OrganismGram;
+  whonetCode: string | null;
+  active: boolean;
+}
+
+export interface Antibiotic {
+  id: string;
+  code: string;
+  name: string;
+  className: string;
+  whonetCode: string | null;
+  active: boolean;
+}
+
+export interface Breakpoint {
+  id: string;
+  standard: BreakpointStandard;
+  version: string;
+  organismCode: string;
+  antibioticCode: string;
+  method: AstMethod;
+  susceptibleThreshold: number;
+  resistantThreshold: number;
+  unit: string | null;
+  firstLine: boolean;
+  active: boolean;
+}
+
+export interface SusceptibilityResult {
+  id: string;
+  cultureId: string;
+  isolateId: string;
+  antibioticCode: string;
+  antibioticName: string;
+  method: AstMethod;
+  value: number | null;
+  interpretation: AstInterpretation;
+  breakpointId: string | null;
+  standard: BreakpointStandard | null;
+  unit: string | null;
+  notes: string | null;
+}
+
+export interface Culture {
+  id: string;
+  caseId: string;
+  accessionNumber: string;
+  patientId: string;
+  patientName: string;
+  testRequestId: string;
+  status: string;
+  specimenType: string;
+  plateType: string | null;
+  media: string | null;
+  incubation: string | null;
+  organismCode: string | null;
+  organismName: string | null;
+  colonyCount: string | null;
+  notes: string | null;
+  resistanceFlags: string[];
+  reportedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Isolate {
+  id: string;
+  cultureId: string;
+  organismCode: string;
+  organismName: string;
+  gram: OrganismGram | null;
+  notes: string | null;
+}
+
+export interface AntibiogramRow {
+  organismCode: string;
+  organismName: string;
+  antibioticCode: string;
+  antibioticName: string;
+  tested: number;
+  susceptible: number;
+  intermediate: number;
+  resistant: number;
+  susceptibilityPercent: number;
 }

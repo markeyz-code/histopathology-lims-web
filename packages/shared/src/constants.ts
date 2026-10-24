@@ -255,6 +255,7 @@ export const CAPABILITIES = [
   'verification',
   'disciplines',
   'qc',
+  'microbiology',
 ] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
@@ -282,6 +283,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'verification',
     'disciplines',
     'qc',
+    'microbiology',
   ],
   RECEPTIONIST: ['dashboard', 'accession', 'cases', 'locator', 'labels', 'billing', 'collection'],
   PHLEBOTOMIST: ['dashboard', 'cases', 'locator', 'labels', 'collection'],
@@ -296,6 +298,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'inventory',
     'results',
     'qc',
+    'microbiology',
   ],
   SCIENTIST: [
     'dashboard',
@@ -307,6 +310,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'results',
     'verification',
     'qc',
+    'microbiology',
   ],
   PATHOLOGIST: [
     'dashboard',
@@ -322,6 +326,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'verification',
     'disciplines',
     'qc',
+    'microbiology',
   ],
   REFERRER: ['referrer'],
 };
@@ -763,5 +768,35 @@ export const CONSIGNMENT_STATUS_LABELS: Record<ConsignmentStatus, string> = {
   DISPATCHED: 'Dispatched',
   IN_TRANSIT: 'In transit',
   RECEIVED: 'Received',
+  REJECTED: 'Rejected',
+};
+
+// Phase 4 — microbiology
+export const ORGANISM_GRAMS = ['POSITIVE', 'NEGATIVE', 'YEAST', 'OTHER'] as const;
+export type OrganismGram = (typeof ORGANISM_GRAMS)[number];
+
+export const AST_METHODS = ['MIC', 'DISK'] as const;
+export type AstMethod = (typeof AST_METHODS)[number];
+
+export const AST_INTERPRETATIONS = ['S', 'I', 'R'] as const;
+export type AstInterpretation = (typeof AST_INTERPRETATIONS)[number];
+
+export const AST_INTERPRETATION_LABELS: Record<AstInterpretation, string> = {
+  S: 'Susceptible',
+  I: 'Intermediate',
+  R: 'Resistant',
+};
+
+export const BREAKPOINT_STANDARDS = ['CLSI', 'EUCAST'] as const;
+export type BreakpointStandard = (typeof BREAKPOINT_STANDARDS)[number];
+
+export const MICROBIOLOGY_CULTURE_STATUS_LABELS: Record<string, string> = {
+  RECEIVED: 'Received',
+  PLATED: 'Plated',
+  INCUBATING: 'Incubating',
+  READ: 'Read',
+  ID_DONE: 'Identification done',
+  AST_DONE: 'AST done',
+  REPORTED: 'Reported',
   REJECTED: 'Rejected',
 };

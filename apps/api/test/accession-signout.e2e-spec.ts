@@ -206,7 +206,7 @@ describe('Accession to sign-out (e2e)', () => {
         email: `tech-${unique}@e2e.test`,
         role: 'TECHNOLOGIST',
         labId,
-        disciplines: ['HISTOPATHOLOGY', 'HAEMATOLOGY', 'CHEMICAL_PATHOLOGY'],
+        disciplines: ['HISTOPATHOLOGY', 'HAEMATOLOGY', 'CHEMICAL_PATHOLOGY', 'MICROBIOLOGY'],
       },
       {
         _id: userIds.pathologist,
@@ -214,7 +214,7 @@ describe('Accession to sign-out (e2e)', () => {
         email: `path-${unique}@e2e.test`,
         role: 'PATHOLOGIST',
         labId,
-        disciplines: ['HISTOPATHOLOGY', 'HAEMATOLOGY', 'CHEMICAL_PATHOLOGY'],
+        disciplines: ['HISTOPATHOLOGY', 'HAEMATOLOGY', 'CHEMICAL_PATHOLOGY', 'MICROBIOLOGY'],
       },
       {
         _id: userIds.admin,
@@ -338,6 +338,7 @@ describe('Accession to sign-out (e2e)', () => {
       'HISTOPATHOLOGY',
       'HAEMATOLOGY',
       'CHEMICAL_PATHOLOGY',
+      'MICROBIOLOGY',
     ]);
     expect(me.body.lab.enabledDisciplines).toContain('HISTOPATHOLOGY');
   });
@@ -1306,6 +1307,113 @@ describe('Accession to sign-out (e2e)', () => {
       .set(auth(tokens.pathologist))
       .expect(200);
     expect(cumulative.headers['content-type']).toContain('application/pdf');
+  });
+
+  it('moves a microbiology culture through identification, breakpoint AST, antibiogram and WHONET export', async () => {
+    await request(http)
+      .post('/api/micro/organisms')
+      .set(auth(tokens.admin))
+      .send({ code: 'EC', name: 'Escherichia coli', gram: 'NEGATIVE', whonetCode: 'EC' })
+      .expect(201);
+    await request(http)
+      .post('/api/micro/antibiotics')
+      .set(auth(tokens.admin))
+      .send({ code: 'AMP', name: 'Ampicillin', className: 'Penicillin', whonetCode: 'AMP' })
+      .expect(201);
+    await request(http)
+      .post('/api/micro/breakpoints')
+      .set(auth(tokens.admin))
+      .send({
+        standard: 'CLSI',
+        version: '2025',
+        organismCode: 'EC',
+        antibioticCode: 'AMP',
+        method: 'MIC',
+        susceptibleThreshold: 8,
+        resistantThreshold: 32,
+        unit: 'mg/L',
+        firstLine: true,
+      })
+      .expect(201);
+
+    const accession = await request(http)
+      .post('/api/cases/accession')
+      .set(auth(tokens.receptionist))
+      .send({
+        patient: {
+          firstName: 'Micro',
+          lastName: 'Patient',
+          sex: 'FEMALE',
+          age: 36,
+          mrn: `P4-${unique}`,
+        },
+        referringClinician: { name: 'Dr Phase Four', email: users.referrer },
+        clinicalHistory: 'Dysuria and fever; urine culture.',
+        priority: 'ROUTINE',
+        discipline: 'MICROBIOLOGY',
+        testCode: 'MICRO',
+        specimens: [{ specimenType: 'Midstream urine', site: 'Urinary tract' }],
+      })
+      .expect(201);
+    const culture = await request(http)
+      .post('/api/micro/cultures')
+      .set(auth(tokens.technologist))
+      .send({
+        testRequestId: accession.body.testRequests[0].id,
+        specimenType: 'Midstream urine',
+        plateType: 'CLED + blood agar',
+        media: 'CLED',
+      })
+      .expect(201);
+    expect(culture.body.status).toBe('RECEIVED');
+    for (const status of ['PLATED', 'INCUBATING', 'READ']) {
+      await request(http)
+        .patch(`/api/micro/cultures/${culture.body.id}`)
+        .set(auth(tokens.technologist))
+        .send({ status })
+        .expect(200);
+    }
+    const isolate = await request(http)
+      .post(`/api/micro/cultures/${culture.body.id}/isolates`)
+      .set(auth(tokens.technologist))
+      .send({ organismCode: 'EC' })
+      .expect(201);
+    const ast = await request(http)
+      .post(`/api/micro/cultures/${culture.body.id}/ast`)
+      .set(auth(tokens.technologist))
+      .send({
+        isolateId: isolate.body.id,
+        antibioticCode: 'AMP',
+        method: 'MIC',
+        value: 32,
+      })
+      .expect(201);
+    expect(ast.body.interpretation).toBe('R');
+    const detail = await request(http)
+      .get(`/api/micro/cultures/${culture.body.id}`)
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(detail.body.status).toBe('AST_DONE');
+    expect(detail.body.susceptibilities[0].breakpointId).toBeTruthy();
+
+    await request(http)
+      .patch(`/api/micro/cultures/${culture.body.id}`)
+      .set(auth(tokens.pathologist))
+      .send({ status: 'REPORTED' })
+      .expect(200);
+    const antibiogram = await request(http)
+      .get('/api/micro/antibiogram')
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(antibiogram.body[0].organismCode).toBe('EC');
+    expect(antibiogram.body[0].resistant).toBe(1);
+    const whonet = await request(http)
+      .get('/api/micro/whonet')
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(whonet.headers['content-type']).toContain('text/csv');
+    expect(whonet.text).toContain('EC;AMP');
+    expect(whonet.text).toContain('AMP');
   });
 
   it('keeps the worklist and dashboard tenant-scoped and TAT-aware', async () => {

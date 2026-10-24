@@ -560,6 +560,16 @@ export async function seedPhase2(connection: Connection, lab: SeedLab, now: Date
       testName: 'Full blood count',
       accession: 'HAE-2026-000002',
     },
+    {
+      first: 'Musa',
+      last: 'Culture',
+      sex: 'MALE',
+      age: 41,
+      testCode: 'MICRO',
+      discipline: 'MICROBIOLOGY',
+      testName: 'Urine culture and susceptibility',
+      accession: 'MIC-2026-000001',
+    },
   ];
   for (const [index, spec] of patientSpecs.entries()) {
     const patientId = new Types.ObjectId();
