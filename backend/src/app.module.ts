@@ -64,7 +64,7 @@ import { WsiModule } from './extensions/wsi/wsi.module';
       isGlobal: true,
       cache: true,
       expandVariables: true,
-      envFilePath: ['.env', '../../.env'],
+      envFilePath: ['.env', '../.env', '../../.env'],
       validate: validateEnv,
     }),
     LoggerModule.forRootAsync({
