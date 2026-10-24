@@ -1,6 +1,6 @@
 # Multi-discipline Laboratory LIMS
 
-**Phase 1.5 — a multi-discipline LIMS foundation.** A shared-core laboratory information management system for general medical laboratories, designed Nigeria-first for low-resource, low-bandwidth settings. Histopathology is the most complete module; haematology, chemical pathology and medical microbiology have registered discipline foundations waiting for their result workflows.
+**Phase 2 — a multi-discipline LIMS with diagnostic results.** A shared-core laboratory information management system for general medical laboratories, designed Nigeria-first for low-resource, low-bandwidth settings. Histopathology is the most complete module. Phase 2 adds tenant-configurable test catalogues, versioned haematology and chemistry results, a safe rules engine, Westgard QC and cross-discipline cumulative reports. Microbiology remains a registered Phase 4 foundation.
 
 Every laboratory enables only the disciplines it operates. Patient, case, specimen, custody, audit, worklist and report scaffolding are shared. Discipline modules contribute their own units, state machines, worklist configuration, result schemas, rules and report templates through a `DisciplineRegistry`.
 
@@ -19,8 +19,22 @@ Histopathology keeps the block-and-slide custody model: a specimen becomes casse
 | ![Inventory](docs/screens/inventory.jpg)                 | ![QA review](docs/screens/qa.jpg)                                  |
 | **Billing & HMO claims**                                 | **Clinical coding**                                                |
 | ![Billing](docs/screens/billing.jpg)                     | ![SNOMED and ICD-O-3 coding](docs/screens/report-coding.jpg)       |
+| **Result entry & rules**                                 | **Levey-Jennings QC**                                              |
+| ![Result entry](docs/screens/results.jpg)                | ![Quality control](docs/screens/qc.jpg)                            |
 
 ---
+
+## Phase 2 — results, rules and QC
+
+- Tenant-configurable tests, analytes, panels, units, age/sex reference ranges and critical limits.
+- Append-only result versions with numeric/coded/text/calculated fields and automatic flags.
+- Rules engine with safe JSON conditions: autoverification, critical alerts, reflex testing, delta checks and audited rule executions.
+- Haematology and chemistry result worklist/editor with verify, release and critical acknowledgement.
+- QC materials, Levey-Jennings charts and Westgard 1₃s/2₂s/R₄s/4₁s/10x rules.
+- Cross-discipline cumulative patient report.
+- Admin catalogue and rule editors; searchable dropdowns throughout the application.
+
+Details: [docs/phase-2.md](docs/phase-2.md).
 
 ## Phase 1.5 — core / discipline foundation
 
@@ -116,7 +130,7 @@ docker/       Mongo replica-set initialiser
 docs/         Architecture notes and screenshots
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the shared core, [docs/phase-1.5-migration.md](docs/phase-1.5-migration.md) for the discipline refactor and [docs/phase-2-3.md](docs/phase-2-3.md) for the already-built extension modules (legacy numbering).
+See [docs/architecture.md](docs/architecture.md) for the shared core, [docs/phase-2.md](docs/phase-2.md) for Phase 2, [docs/phase-1.5-migration.md](docs/phase-1.5-migration.md) for the discipline refactor and [docs/phase-2-3.md](docs/phase-2-3.md) for the already-built extension modules (legacy numbering).
 
 ### Domain hierarchy
 
@@ -291,6 +305,13 @@ GET    /api/users[/pathologists]                   GET  /api/labs/me
 GET    /api/audit                                  POST /api/maintenance/tat-check
 GET    /api/health  (public)                       Swagger at /docs
 
+Phase 2 additions:
+GET    /api/catalog/tests | /panels                  POST/PATCH catalogue
+GET    /api/results/worklist                       POST /api/results
+PATCH  /api/results/:id                            POST verify|release|acknowledge-critical
+GET    /api/results/cumulative/:patientId          GET/POST /api/rules
+GET    /api/qc/materials | /qc/runs                POST /api/qc/materials | /qc/runs
+
 Phase 1.5 additions:
 GET    /api/test-requests                         GET /api/test-requests/case/:caseId
 
@@ -324,7 +345,7 @@ pnpm test:e2e
 pnpm verify
 ```
 
-The E2E suite (17 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
+The E2E suite (18 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
 
 - accessioning generates a formatted accession number and unique specimen barcode
 - role checks and invalid scan transitions reject correctly
@@ -343,6 +364,10 @@ The E2E suite (17 tests) starts an ephemeral MongoDB **replica set** with `mongo
 - every accession creates a histopathology TestRequest
 - a haem-only pathologist is denied histopathology routes while a histo pathologist is allowed
 - block/slide label providers still resolve through the core label service
+- a catalogue-driven FBC result raises a reflex request and records rule executions
+- critical potassium blocks verification until acknowledgement
+- QC runs produce accepted/rejected Westgard statuses
+- a released result appears in the cumulative patient report
 
 ## Design direction
 
