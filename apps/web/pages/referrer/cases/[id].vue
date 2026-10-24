@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { PortalCaseDetail } from '@lims/shared';
+import type { PortalCaseDetail, PortalResultSummary } from '@lims/shared';
+import { DISCIPLINE_LABELS } from '@lims/shared';
 
 definePageMeta({ layout: 'portal', title: 'Referral detail' });
 useHead({ title: 'Referral detail' });
@@ -23,6 +24,18 @@ async function load(): Promise<void> {
     error.value = apiErrorMessage(caught);
   } finally {
     loading.value = false;
+  }
+}
+
+async function downloadResult(result: PortalResultSummary): Promise<void> {
+  if (!detail.value) return;
+  try {
+    await documents.download(
+      result.downloadUrl,
+      `${detail.value.accessionNumber}-${result.testCode}.pdf`,
+    );
+  } catch (caught) {
+    toast.error('Result could not be downloaded', apiErrorMessage(caught));
   }
 }
 
@@ -155,6 +168,28 @@ onMounted(load);
               The laboratory has not released this report to the portal yet. You will receive a
               notification when it is ready.
             </p>
+          </section>
+
+          <section v-if="detail.results.length > 0" class="panel p-5">
+            <p class="label-caps">Released results</p>
+            <div class="mt-3 divide-y divide-line border border-line">
+              <button
+                v-for="result in detail.results"
+                :key="result.id"
+                type="button"
+                class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-raised"
+                @click="downloadResult(result)"
+              >
+                <div>
+                  <p class="text-sm font-medium">{{ result.testName }}</p>
+                  <p class="mt-0.5 font-mono text-[9px] uppercase tracking-wide2 text-muted">
+                    {{ DISCIPLINE_LABELS[result.discipline] }} · {{ result.testCode }} · released
+                    {{ date(result.releasedAt) }}
+                  </p>
+                </div>
+                <AppIcon name="download" :size="14" class="text-accent" />
+              </button>
+            </div>
           </section>
         </div>
 

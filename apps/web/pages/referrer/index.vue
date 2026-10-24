@@ -114,7 +114,7 @@ onMounted(() => {
           <span
             class="shrink-0 border px-2 py-1 font-mono text-[9px] uppercase tracking-caps"
             :class="
-              item.reportAvailable
+              item.reportAvailable || item.resultsAvailable
                 ? 'border-success/40 bg-success/10 text-success'
                 : item.referralStatus === 'READY'
                   ? 'border-warning/40 bg-warning/10 text-warning'
@@ -130,8 +130,12 @@ onMounted(() => {
           <span>{{ item.priority }}</span>
           <span v-if="item.reportedAt">Reported {{ date(item.reportedAt) }}</span>
           <span v-if="item.releasedAt" class="text-success"
-            >Released {{ date(item.releasedAt) }}</span
+            >Report released {{ date(item.releasedAt) }}</span
           >
+          <span v-if="item.resultsAvailable" class="text-success">
+            {{ item.releasedResultCount }} result{{ item.releasedResultCount === 1 ? '' : 's' }}
+            released
+          </span>
           <span class="ml-auto flex items-center gap-1 text-accent">
             Open <AppIcon name="arrow-right" :size="11" />
           </span>

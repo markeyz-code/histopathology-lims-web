@@ -15,6 +15,7 @@ useHead({ title: 'Result entry' });
 const api = useApi();
 const auth = useAuthStore();
 const toast = useToast();
+const documents = useDocuments();
 const { dateTime } = useFormat();
 
 const disciplines = computed<Discipline[]>(() => {
@@ -43,6 +44,7 @@ const values = reactive<Record<string, string>>({});
 const comment = ref('');
 const saving = ref(false);
 const verifying = ref(false);
+const pdfSaving = ref(false);
 const acknowledging = ref(false);
 const ackNote = ref('');
 const ackOpen = ref(false);
@@ -208,6 +210,21 @@ async function release(): Promise<void> {
   }
 }
 
+async function printPdf(): Promise<void> {
+  if (!result.value) return;
+  pdfSaving.value = true;
+  try {
+    await documents.download(
+      `/results/${result.value.id}/pdf`,
+      `${result.value.accessionNumber}-${result.value.testCode}.pdf`,
+    );
+  } catch (caught) {
+    toast.error('PDF unavailable', apiErrorMessage(caught));
+  } finally {
+    pdfSaving.value = false;
+  }
+}
+
 async function acknowledge(): Promise<void> {
   if (!result.value || ackNote.value.trim().length < 3) return;
   acknowledging.value = true;
@@ -348,6 +365,15 @@ watch(discipline, () => {
               </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+              <button
+                v-if="result.status === 'VERIFIED' || result.status === 'RELEASED'"
+                type="button"
+                class="btn btn-ghost btn-sm"
+                :disabled="pdfSaving"
+                @click="printPdf"
+              >
+                <AppIcon name="download" :size="12" /> PDF
+              </button>
               <button type="button" class="btn btn-ghost btn-sm" :disabled="saving" @click="save">
                 <AppIcon name="save" :size="12" /> {{ saving ? 'Saving…' : 'Save' }}
               </button>

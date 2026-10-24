@@ -7,7 +7,9 @@ useHead({ title: 'Cumulative report' });
 
 const route = useRoute();
 const api = useApi();
+const documents = useDocuments();
 const { dateTime, name } = useFormat();
+const pdfSaving = ref(false);
 const patientId = computed(() => String(route.params.id));
 const report = ref<CumulativeReport | null>(null);
 const loading = ref(true);
@@ -48,6 +50,20 @@ function printReport(): void {
   window.print();
 }
 
+async function downloadPdf(): Promise<void> {
+  pdfSaving.value = true;
+  try {
+    await documents.download(
+      `/results/cumulative/${patientId.value}/pdf`,
+      `${report.value?.patient.mrn ?? 'cumulative'}-cumulative.pdf`,
+    );
+  } catch (caught) {
+    error.value = apiErrorMessage(caught);
+  } finally {
+    pdfSaving.value = false;
+  }
+}
+
 onMounted(load);
 </script>
 
@@ -63,6 +79,9 @@ onMounted(load);
       "
     >
       <template #actions>
+        <button type="button" class="btn btn-secondary" :disabled="pdfSaving" @click="downloadPdf">
+          <AppIcon name="download" :size="13" /> PDF
+        </button>
         <button type="button" class="btn btn-secondary" @click="printReport()">
           <AppIcon name="file" :size="13" /> Print
         </button>
