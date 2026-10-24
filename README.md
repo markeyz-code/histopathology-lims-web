@@ -1,6 +1,6 @@
 # Multi-discipline Laboratory LIMS
 
-**Phase 4 — microbiology culture and susceptibility.** A shared-core laboratory information management system for general medical laboratories, designed Nigeria-first for low-resource, low-bandwidth settings. Histopathology is the most complete module. Phase 2 added tenant-configurable test catalogues, versioned haematology and chemistry results, a safe rules engine, Westgard QC and cross-discipline cumulative reports. Phase 3 added multi-discipline PDFs, delivery, portal result access and the collection-centre/rider chain. Phase 4 adds microbiology cultures, isolate identification, CLSI/EUCAST AST interpretation, resistance flags, antibiogram and WHONET export.
+**Phase 5 — quality management and cross-lab send-outs.** A shared-core laboratory information management system for general medical laboratories, designed Nigeria-first for low-resource, low-bandwidth settings. Histopathology is the most complete module. Phase 2 added tenant-configurable test catalogues, versioned haematology and chemistry results, a safe rules engine, Westgard QC and cross-discipline cumulative reports. Phase 3 added multi-discipline PDFs, delivery, portal result access and the collection-centre/rider chain. Phase 4 added microbiology culture/AST. Phase 5 adds equipment and temperature monitoring, non-conformances/CAPA and cross-laboratory send-outs.
 
 Every laboratory enables only the disciplines it operates. Patient, case, specimen, custody, audit, worklist and report scaffolding are shared. Discipline modules contribute their own units, state machines, worklist configuration, result schemas, rules and report templates through a `DisciplineRegistry`.
 
@@ -27,6 +27,15 @@ Histopathology keeps the block-and-slide custody model: a specimen becomes casse
 | ![Microbiology](docs/screens/microbiology.jpg)           | ![Quality control](docs/screens/qc.jpg)                            |
 
 ---
+
+## Phase 5 — quality management and send-outs
+
+- Equipment records with calibration dates and temperature logs with range checks.
+- Non-conformances, root cause and CAPA actions.
+- Cross-lab send-outs with courier, tracking, receipt and reporting lifecycle.
+- `/quality` workspace for equipment, NCRs, CAPA and send-outs.
+
+Details: [docs/phase-5.md](docs/phase-5.md).
 
 ## Phase 4 — microbiology
 
@@ -155,7 +164,7 @@ docker/       Mongo replica-set initialiser
 docs/         Architecture notes and screenshots
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the shared core, [docs/phase-2.md](docs/phase-2.md) for Phase 2, [docs/phase-3.md](docs/phase-3.md) for Phase 3, [docs/phase-4.md](docs/phase-4.md) for Phase 4, [docs/phase-1.5-migration.md](docs/phase-1.5-migration.md) for the discipline refactor and [docs/phase-2-3.md](docs/phase-2-3.md) for the already-built extension modules (legacy numbering).
+See [docs/architecture.md](docs/architecture.md) for the shared core, [docs/phase-2.md](docs/phase-2.md) for Phase 2, [docs/phase-3.md](docs/phase-3.md) for Phase 3, [docs/phase-4.md](docs/phase-4.md) for Phase 4, [docs/phase-5.md](docs/phase-5.md) for Phase 5, [docs/phase-1.5-migration.md](docs/phase-1.5-migration.md) for the discipline refactor and [docs/phase-2-3.md](docs/phase-2-3.md) for the already-built extension modules (legacy numbering).
 
 ### Domain hierarchy
 
@@ -330,6 +339,11 @@ GET    /api/users[/pathologists]                   GET  /api/labs/me
 GET    /api/audit                                  POST /api/maintenance/tat-check
 GET    /api/health  (public)                       Swagger at /docs
 
+Phase 5 additions:
+GET/POST /api/quality/equipment                    GET/POST /quality/equipment/:id/temperature
+GET/POST /api/quality/nonconformances              POST /quality/nonconformances/:id/capa
+GET/POST /api/quality/send-outs                    PATCH /quality/send-outs/:id
+
 Phase 4 additions:
 GET/POST /api/micro/organisms | antibiotics | breakpoints
 GET/POST /api/micro/cultures                      GET/PATCH /api/micro/cultures/:id
@@ -380,7 +394,7 @@ pnpm test:e2e
 pnpm verify
 ```
 
-The E2E suite (20 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
+The E2E suite (21 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
 
 - accessioning generates a formatted accession number and unique specimen barcode
 - role checks and invalid scan transitions reject correctly
@@ -406,6 +420,7 @@ The E2E suite (20 tests) starts an ephemeral MongoDB **replica set** with `mongo
 - result and cumulative PDFs are generated
 - a sample moves through collection centre → consignment → rider dispatch → laboratory receipt
 - a microbiology culture completes identification, MIC AST, antibiogram and WHONET export
+- equipment temperature, non-conformance/CAPA and a send-out lifecycle are recorded
 
 ## Design direction
 
