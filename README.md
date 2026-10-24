@@ -1,6 +1,6 @@
 # Multi-discipline Laboratory LIMS
 
-**Phase 3 — multi-discipline results, delivery and pre-analytical flow.** A shared-core laboratory information management system for general medical laboratories, designed Nigeria-first for low-resource, low-bandwidth settings. Histopathology is the most complete module. Phase 2 added tenant-configurable test catalogues, versioned haematology and chemistry results, a safe rules engine, Westgard QC and cross-discipline cumulative reports. Phase 3 adds multi-discipline result/cumulative PDFs, result delivery and referral-portal exposure, and the collection-centre/rider consignment chain. Microbiology remains Phase 4.
+**Phase 4 — microbiology culture and susceptibility.** A shared-core laboratory information management system for general medical laboratories, designed Nigeria-first for low-resource, low-bandwidth settings. Histopathology is the most complete module. Phase 2 added tenant-configurable test catalogues, versioned haematology and chemistry results, a safe rules engine, Westgard QC and cross-discipline cumulative reports. Phase 3 added multi-discipline PDFs, delivery, portal result access and the collection-centre/rider chain. Phase 4 adds microbiology cultures, isolate identification, CLSI/EUCAST AST interpretation, resistance flags, antibiogram and WHONET export.
 
 Every laboratory enables only the disciplines it operates. Patient, case, specimen, custody, audit, worklist and report scaffolding are shared. Discipline modules contribute their own units, state machines, worklist configuration, result schemas, rules and report templates through a `DisciplineRegistry`.
 
@@ -23,8 +23,20 @@ Histopathology keeps the block-and-slide custody model: a specimen becomes casse
 | ![Result entry](docs/screens/results.jpg)                | ![Quality control](docs/screens/qc.jpg)                            |
 | **Pre-analytical handoff**                               | **Referral results**                                               |
 | ![Pre-analytics](docs/screens/preanalytics.jpg)          | ![Portal results](docs/screens/portal-results.jpg)                 |
+| **Microbiology culture & AST**                           | **Antibiogram / WHONET**                                           |
+| ![Microbiology](docs/screens/microbiology.jpg)           | ![Quality control](docs/screens/qc.jpg)                            |
 
 ---
+
+## Phase 4 — microbiology
+
+- Organisms, antibiotics, CLSI/EUCAST breakpoint tables.
+- Culture lifecycle and isolate identification.
+- MIC and disk AST auto-interpretation with stored breakpoint references.
+- Resistance flags, antibiogram and WHONET CSV export.
+- `/microbiology` culture bench and AST workspace.
+
+Details: [docs/phase-4.md](docs/phase-4.md).
 
 ## Phase 3 — reporting, delivery and pre-analytics
 
@@ -143,7 +155,7 @@ docker/       Mongo replica-set initialiser
 docs/         Architecture notes and screenshots
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the shared core, [docs/phase-2.md](docs/phase-2.md) for Phase 2, [docs/phase-3.md](docs/phase-3.md) for Phase 3, [docs/phase-1.5-migration.md](docs/phase-1.5-migration.md) for the discipline refactor and [docs/phase-2-3.md](docs/phase-2-3.md) for the already-built extension modules (legacy numbering).
+See [docs/architecture.md](docs/architecture.md) for the shared core, [docs/phase-2.md](docs/phase-2.md) for Phase 2, [docs/phase-3.md](docs/phase-3.md) for Phase 3, [docs/phase-4.md](docs/phase-4.md) for Phase 4, [docs/phase-1.5-migration.md](docs/phase-1.5-migration.md) for the discipline refactor and [docs/phase-2-3.md](docs/phase-2-3.md) for the already-built extension modules (legacy numbering).
 
 ### Domain hierarchy
 
@@ -318,6 +330,11 @@ GET    /api/users[/pathologists]                   GET  /api/labs/me
 GET    /api/audit                                  POST /api/maintenance/tat-check
 GET    /api/health  (public)                       Swagger at /docs
 
+Phase 4 additions:
+GET/POST /api/micro/organisms | antibiotics | breakpoints
+GET/POST /api/micro/cultures                      GET/PATCH /api/micro/cultures/:id
+POST   /api/micro/cultures/:id/isolates|ast       GET /api/micro/antibiogram |whonet
+
 Phase 3 additions:
 GET    /api/results/:id/pdf                        GET /api/results/cumulative/:patientId/pdf
 GET    /api/portal/results/:id/pdf                 GET/POST /api/preanalytics/centres
@@ -363,7 +380,7 @@ pnpm test:e2e
 pnpm verify
 ```
 
-The E2E suite (19 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
+The E2E suite (20 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
 
 - accessioning generates a formatted accession number and unique specimen barcode
 - role checks and invalid scan transitions reject correctly
@@ -388,6 +405,7 @@ The E2E suite (19 tests) starts an ephemeral MongoDB **replica set** with `mongo
 - a released result appears in the cumulative patient report
 - result and cumulative PDFs are generated
 - a sample moves through collection centre → consignment → rider dispatch → laboratory receipt
+- a microbiology culture completes identification, MIC AST, antibiogram and WHONET export
 
 ## Design direction
 
