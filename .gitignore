@@ -4,9 +4,13 @@ node_modules/
 
 # builds
 dist/
+**/dist/
 .output/
+**/.output/
 .nuxt/
+**/.nuxt/
 .nitro/
+**/.nitro/
 .cache/
 *.tsbuildinfo
 
