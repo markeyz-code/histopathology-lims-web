@@ -173,7 +173,7 @@ onMounted(load);
                 </button>
               </div>
             </div>
-            <div class="mt-4 grid gap-3 sm:grid-cols-4">
+            <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div>
                 <p class="label-caps">Plan</p>
                 <p class="mt-1 text-sm">{{ org.plan }}</p>

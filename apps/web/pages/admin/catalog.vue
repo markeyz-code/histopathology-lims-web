@@ -174,7 +174,9 @@ onMounted(load);
             </thead>
             <tbody>
               <tr v-for="test in tests" :key="test.id">
-                <td data-label="Discipline" class="text-xs text-muted">{{ DISCIPLINE_LABELS[test.discipline] }}</td>
+                <td data-label="Discipline" class="text-xs text-muted">
+                  {{ DISCIPLINE_LABELS[test.discipline] }}
+                </td>
                 <td data-label="Test">
                   <p class="mono text-[10px] text-accent">{{ test.code }}</p>
                   <p class="mt-0.5 text-sm font-medium">{{ test.name }}</p>

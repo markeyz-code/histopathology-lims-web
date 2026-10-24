@@ -373,7 +373,9 @@ onMounted(load);
               <td data-label="Case" class="mono text-[10px]">{{ row.accessionNumber }}</td>
               <td data-label="Test" class="text-xs">{{ row.testName }}</td>
               <td data-label="Reference lab" class="text-xs">{{ row.referenceLab }}</td>
-              <td data-label="Courier" class="text-xs text-muted">{{ row.trackingNumber ?? row.courier ?? '—' }}</td>
+              <td data-label="Courier" class="text-xs text-muted">
+                {{ row.trackingNumber ?? row.courier ?? '—' }}
+              </td>
               <td data-label="Status">
                 <span class="font-mono text-[9px]" :class="statusClass(row.status)">{{
                   row.status

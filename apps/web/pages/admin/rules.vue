@@ -177,7 +177,9 @@ onMounted(load);
                 {{ rule.actions.map((action) => action.type).join(' · ') }}
               </p>
             </td>
-            <td data-label="Discipline" class="text-xs text-muted">{{ DISCIPLINE_LABELS[rule.discipline] }}</td>
+            <td data-label="Discipline" class="text-xs text-muted">
+              {{ DISCIPLINE_LABELS[rule.discipline] }}
+            </td>
             <td data-label="Trigger" class="font-mono text-[10px]">{{ rule.trigger }}</td>
             <td data-label="Tests" class="text-xs">
               {{ rule.testCodes.length ? rule.testCodes.join(', ') : 'All tests' }}

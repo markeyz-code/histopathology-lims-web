@@ -421,7 +421,7 @@ watch(discipline, () => {
           </div>
 
           <div class="overflow-x-auto">
-            <table class="data-table">
+            <table class="data-table mobile-cards">
               <thead>
                 <tr>
                   <th>Analyte</th>
@@ -432,13 +432,13 @@ watch(discipline, () => {
               </thead>
               <tbody>
                 <tr v-for="analyte in currentTest.analytes" :key="analyte.key">
-                  <td>
+                  <td data-label="Analyte">
                     <p class="text-sm font-medium">{{ analyte.name }}</p>
                     <p class="mono text-[9px] text-muted">
                       {{ analyte.key }}<span v-if="analyte.unit"> · {{ analyte.unit }}</span>
                     </p>
                   </td>
-                  <td class="min-w-[160px]">
+                  <td data-label="Result" class="min-w-[160px]">
                     <SearchSelect
                       v-if="analyte.resultType === 'CODED' && analyte.options?.length"
                       v-model="values[analyte.key]"
@@ -460,7 +460,7 @@ watch(discipline, () => {
                       placeholder="Result"
                     />
                   </td>
-                  <td class="whitespace-nowrap text-xs text-muted">
+                  <td data-label="Reference" class="whitespace-nowrap text-xs text-muted">
                     <span
                       v-for="value in result.values.filter(
                         (item) => item.analyteKey === analyte.key,
@@ -470,7 +470,7 @@ watch(discipline, () => {
                       {{ value.referenceText ?? '—' }}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Flag">
                     <span
                       v-for="value in result.values.filter(
                         (item) => item.analyteKey === analyte.key,

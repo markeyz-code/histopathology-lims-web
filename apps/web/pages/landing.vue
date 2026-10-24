@@ -1178,7 +1178,9 @@ const faqs = [
     <header
       class="sticky top-0 z-40 border-b border-line/70 bg-surface/90 backdrop-blur-xl shadow-xs transition-all duration-200"
     >
-      <div class="mx-auto flex max-w-shell items-center justify-between gap-2 px-3 h-16 sm:gap-3 sm:px-6 lg:px-8">
+      <div
+        class="mx-auto flex max-w-shell items-center justify-between gap-2 px-3 h-16 sm:gap-3 sm:px-6 lg:px-8"
+      >
         <!-- Left: Wordmark & Medical Subtitle Badge -->
         <div class="flex items-center gap-3 shrink-0">
           <NuxtLink to="/landing" class="group flex items-center gap-3 focus:outline-none">
@@ -2974,7 +2976,9 @@ const faqs = [
             >&copy; {{ new Date().getFullYear() }} Multi-Discipline Medical Laboratory LIMS. All
             rights reserved.</span
           >
-          <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center sm:justify-end">
+          <div
+            class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center sm:justify-end"
+          >
             <a href="#support" class="text-accent hover:underline">Support</a>
             <span>·</span>
             <a href="mailto:support@lims.africa" class="hover:text-ink">support@lims.africa</a>

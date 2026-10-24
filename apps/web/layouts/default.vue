@@ -268,12 +268,13 @@ onBeforeUnmount(() => {
                 ref="searchInput"
                 v-model="quickSearch"
                 type="search"
-                class="input input-sm w-full pl-8 pr-12 font-mono text-[11px] uppercase placeholder:normal-case placeholder:tracking-normal"
-                placeholder="Find block / slide…"
+                class="input input-sm w-full pl-8 pr-10 font-mono sm:pr-12 text-[11px] uppercase placeholder:normal-case placeholder:tracking-normal"
+                placeholder="Search barcode…"
                 autocomplete="off"
                 spellcheck="false"
               />
-              <span class="kbd pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
+              <span
+                class="kbd pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 sm:inline-flex"
                 >/</span
               >
             </div>

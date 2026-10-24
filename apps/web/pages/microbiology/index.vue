@@ -380,7 +380,7 @@ onMounted(load);
             </button>
           </div>
           <div class="mt-4 overflow-x-auto">
-            <table class="data-table">
+            <table class="data-table mobile-cards">
               <thead>
                 <tr>
                   <th>Antibiotic</th>
@@ -392,11 +392,13 @@ onMounted(load);
               </thead>
               <tbody>
                 <tr v-for="row in selected.susceptibilities" :key="row.id">
-                  <td class="text-sm">{{ row.antibioticName }}</td>
-                  <td class="text-xs">{{ row.method }}</td>
-                  <td class="mono text-xs">{{ row.value }} {{ row.unit }}</td>
-                  <td class="text-xs text-muted">{{ row.standard ?? '—' }}</td>
-                  <td>
+                  <td data-label="Antibiotic" class="text-sm">{{ row.antibioticName }}</td>
+                  <td data-label="Method" class="text-xs">{{ row.method }}</td>
+                  <td data-label="Value" class="mono text-xs">{{ row.value }} {{ row.unit }}</td>
+                  <td data-label="Breakpoint" class="text-xs text-muted">
+                    {{ row.standard ?? '—' }}
+                  </td>
+                  <td data-label="Result">
                     <span
                       class="font-mono text-[10px]"
                       :class="interpretationClass(row.interpretation)"
@@ -428,7 +430,7 @@ onMounted(load);
         <span class="font-mono text-[9px] text-muted">{{ antibiogram.length }} rows</span>
       </div>
       <div class="overflow-x-auto">
-        <table class="data-table">
+        <table class="data-table mobile-cards">
           <thead>
             <tr>
               <th>Organism</th>
@@ -442,13 +444,13 @@ onMounted(load);
           </thead>
           <tbody>
             <tr v-for="row in antibiogram" :key="`${row.organismCode}-${row.antibioticCode}`">
-              <td class="text-sm">{{ row.organismName }}</td>
-              <td class="text-sm">{{ row.antibioticName }}</td>
-              <td class="mono text-xs">{{ row.tested }}</td>
-              <td class="mono text-xs text-success">{{ row.susceptible }}</td>
-              <td class="mono text-xs text-warning">{{ row.intermediate }}</td>
-              <td class="mono text-xs text-danger">{{ row.resistant }}</td>
-              <td class="mono text-xs">{{ row.susceptibilityPercent }}%</td>
+              <td data-label="Organism" class="text-sm">{{ row.organismName }}</td>
+              <td data-label="Antibiotic" class="text-sm">{{ row.antibioticName }}</td>
+              <td data-label="Tested" class="mono text-xs">{{ row.tested }}</td>
+              <td data-label="S" class="mono text-xs text-success">{{ row.susceptible }}</td>
+              <td data-label="I" class="mono text-xs text-warning">{{ row.intermediate }}</td>
+              <td data-label="R" class="mono text-xs text-danger">{{ row.resistant }}</td>
+              <td data-label="%S" class="mono text-xs">{{ row.susceptibilityPercent }}%</td>
             </tr>
             <tr v-if="antibiogram.length === 0">
               <td colspan="7" class="py-5 text-center text-xs text-muted">No AST data.</td>

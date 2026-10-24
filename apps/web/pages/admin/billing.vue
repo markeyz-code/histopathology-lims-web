@@ -321,8 +321,12 @@ void ([] as InvoiceItem[]);
                 </p>
               </td>
               <td data-label="Total" class="mono text-xs">₦{{ invoice.total.toLocaleString() }}</td>
-              <td data-label="Paid" class="mono text-xs">₦{{ invoice.amountPaid.toLocaleString() }}</td>
-              <td data-label="Balance" class="mono text-xs">₦{{ invoice.balance.toLocaleString() }}</td>
+              <td data-label="Paid" class="mono text-xs">
+                ₦{{ invoice.amountPaid.toLocaleString() }}
+              </td>
+              <td data-label="Balance" class="mono text-xs">
+                ₦{{ invoice.balance.toLocaleString() }}
+              </td>
               <td data-label="Status">
                 <span
                   class="border px-2 py-1 font-mono text-[9px] uppercase tracking-caps"

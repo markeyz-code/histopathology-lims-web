@@ -307,7 +307,8 @@ onMounted(() => load());
                   {{ user.active ? 'Active' : 'Inactive' }}
                 </span>
               </td>
-              <td data-label="Last sign-in"
+              <td
+                data-label="Last sign-in"
                 class="whitespace-nowrap font-mono text-[10px] text-muted"
                 :title="user.lastLoginAt ?? undefined"
               >

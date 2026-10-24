@@ -155,7 +155,7 @@ onMounted(load);
     <ErrorState v-if="error" :message="error" @retry="load" />
     <LoadingSkeleton v-else-if="loading" :rows="8" />
     <template v-else-if="overview">
-      <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         <div class="panel p-4">
           <p class="label-caps">Organizations</p>
           <p class="mt-2 display text-3xl">{{ overview.organizations }}</p>

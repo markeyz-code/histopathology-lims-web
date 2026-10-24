@@ -395,7 +395,10 @@ onMounted(load);
                   <p class="mono text-[10px]">{{ lot.lotNumber }}</p>
                   <p class="mt-0.5 text-[10px] text-muted">{{ lot.vendor }}</p>
                 </td>
-                <td data-label="Expiry" :class="new Date(lot.expiresAt) < new Date() ? 'text-danger' : ''">
+                <td
+                  data-label="Expiry"
+                  :class="new Date(lot.expiresAt) < new Date() ? 'text-danger' : ''"
+                >
                   <span class="text-xs">{{ date(lot.expiresAt) }}</span>
                   <p
                     v-if="new Date(lot.expiresAt) < new Date()"

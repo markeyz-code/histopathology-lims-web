@@ -143,7 +143,7 @@ onMounted(load);
             </span>
           </div>
           <div class="overflow-x-auto">
-            <table class="data-table">
+            <table class="data-table mobile-cards">
               <thead>
                 <tr>
                   <th>Analyte</th>
@@ -154,13 +154,17 @@ onMounted(load);
               </thead>
               <tbody>
                 <tr v-for="value in group.latest.values" :key="value.analyteKey">
-                  <td class="text-sm">{{ value.analyteName ?? value.analyteKey }}</td>
-                  <td class="mono text-sm">
+                  <td data-label="Analyte" class="text-sm">
+                    {{ value.analyteName ?? value.analyteKey }}
+                  </td>
+                  <td data-label="Latest" class="mono text-sm">
                     {{ value.value ?? '—' }}
                     <span class="text-[10px] text-muted">{{ value.unit }}</span>
                   </td>
-                  <td class="text-xs text-muted">{{ value.referenceText ?? '—' }}</td>
-                  <td>
+                  <td data-label="Reference" class="text-xs text-muted">
+                    {{ value.referenceText ?? '—' }}
+                  </td>
+                  <td data-label="Flag">
                     <span
                       class="inline-flex border px-2 py-1 font-mono text-[9px] uppercase tracking-wide2"
                       :class="flagClass(value.flag)"

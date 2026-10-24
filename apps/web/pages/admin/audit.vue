@@ -178,7 +178,11 @@ onMounted(load);
           </thead>
           <tbody>
             <tr v-for="log in logs" :key="log.id" class="cursor-pointer" @click="openDetail(log)">
-              <td data-label="Time" class="whitespace-nowrap font-mono text-[10px]" :title="dateTime(log.createdAt)">
+              <td
+                data-label="Time"
+                class="whitespace-nowrap font-mono text-[10px]"
+                :title="dateTime(log.createdAt)"
+              >
                 {{ dateTime(log.createdAt) }}
                 <span class="block text-[9px] text-muted">{{ relative(log.createdAt) }}</span>
               </td>
@@ -199,7 +203,9 @@ onMounted(load);
                 <span class="block font-mono text-[9px] text-muted">{{ log.userRole ?? '—' }}</span>
               </td>
               <td data-label="Case" class="mono text-[10px] text-muted">{{ log.caseId ?? '—' }}</td>
-              <td data-label="Request" class="mono text-[9px] text-muted">{{ log.requestId ?? '—' }}</td>
+              <td data-label="Request" class="mono text-[9px] text-muted">
+                {{ log.requestId ?? '—' }}
+              </td>
             </tr>
           </tbody>
         </table>
