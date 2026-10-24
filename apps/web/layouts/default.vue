@@ -227,10 +227,10 @@ onBeforeUnmount(() => {
 
     <div class="lg:pl-[238px]">
       <header class="sticky top-0 z-30 border-b border-line bg-canvas/95 backdrop-blur-sm">
-        <div class="flex h-14 items-center gap-3 px-4 sm:px-6 lg:px-8">
+        <div class="flex h-14 items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8">
           <button
             type="button"
-            class="inline-flex h-9 w-9 items-center justify-center border border-line bg-surface text-ink lg:hidden"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-line bg-surface text-ink lg:hidden"
             aria-label="Open navigation"
             @click="mobileOpen = true"
           >
@@ -253,7 +253,7 @@ onBeforeUnmount(() => {
           </p>
 
           <form
-            class="ml-auto flex w-full max-w-[280px] items-center gap-2"
+            class="ml-auto flex w-full max-w-[190px] items-center gap-2 sm:max-w-[280px]"
             @submit.prevent="submitSearch"
           >
             <label for="global-locator" class="sr-only">Find a block or slide by barcode</label>

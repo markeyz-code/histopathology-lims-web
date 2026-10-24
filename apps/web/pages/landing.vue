@@ -1128,7 +1128,7 @@ const faqs = [
   <div id="main-content" class="min-h-screen bg-canvas text-ink selection:bg-accent/20">
     <!-- Top Clinical Telemetry & Accreditation Ribbon -->
     <div
-      class="border-b border-rail-line/70 bg-rail px-4 py-1.5 font-mono text-[11px] text-rail-muted"
+      class="hidden border-b border-rail-line/70 bg-rail px-4 py-1.5 font-mono text-[11px] text-rail-muted sm:block"
     >
       <div class="mx-auto flex max-w-shell items-center justify-between gap-3">
         <!-- Live System & Standard Badges -->
@@ -1178,7 +1178,7 @@ const faqs = [
     <header
       class="sticky top-0 z-40 border-b border-line/70 bg-surface/90 backdrop-blur-xl shadow-xs transition-all duration-200"
     >
-      <div class="mx-auto flex max-w-shell items-center justify-between px-4 h-16 sm:px-6 lg:px-8">
+      <div class="mx-auto flex max-w-shell items-center justify-between gap-2 px-3 h-16 sm:gap-3 sm:px-6 lg:px-8">
         <!-- Left: Wordmark & Medical Subtitle Badge -->
         <div class="flex items-center gap-3 shrink-0">
           <NuxtLink to="/landing" class="group flex items-center gap-3 focus:outline-none">
@@ -1239,7 +1239,7 @@ const faqs = [
 
         <!-- Right: Uncrowded Actions & Refined Portals Dropdown -->
         <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
-          <ThemeToggle />
+          <div class="hidden sm:block"><ThemeToggle /></div>
 
           <!-- Authenticated State -->
           <NuxtLink
@@ -1252,7 +1252,7 @@ const faqs = [
           </NuxtLink>
 
           <!-- Unauthenticated Portals Dropdown (Replaces 2 separate bulky buttons!) -->
-          <div v-else ref="portalsDropdownRef" class="relative">
+          <div v-else ref="portalsDropdownRef" class="relative hidden sm:block">
             <button
               type="button"
               class="inline-flex items-center gap-2 rounded-md border border-line bg-raised px-3 py-2 font-mono text-xs uppercase tracking-wider text-ink transition hover:border-line-strong hover:bg-surface focus:outline-none"
@@ -1374,7 +1374,8 @@ const faqs = [
             @click="openDemo('DEMO')"
           >
             <AppIcon name="calendar" size="14" class="transition-transform group-hover:scale-110" />
-            <span class="whitespace-nowrap">Book Demo</span>
+            <span class="hidden xs:inline whitespace-nowrap">Book Demo</span>
+            <span class="xs:hidden whitespace-nowrap">Demo</span>
           </button>
 
           <!-- Mobile Hamburger Trigger -->
@@ -2973,7 +2974,7 @@ const faqs = [
             >&copy; {{ new Date().getFullYear() }} Multi-Discipline Medical Laboratory LIMS. All
             rights reserved.</span
           >
-          <div class="flex items-center gap-4">
+          <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center sm:justify-end">
             <a href="#support" class="text-accent hover:underline">Support</a>
             <span>·</span>
             <a href="mailto:support@lims.africa" class="hover:text-ink">support@lims.africa</a>
