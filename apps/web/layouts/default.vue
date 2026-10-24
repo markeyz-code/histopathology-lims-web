@@ -28,7 +28,13 @@ const sections: NavSection[] = [
   {
     label: 'Work',
     items: [
-      { to: '/', label: 'Dashboard', icon: 'dashboard', capability: 'dashboard', exact: true },
+      {
+        to: '/dashboard',
+        label: 'Dashboard',
+        icon: 'dashboard',
+        capability: 'dashboard',
+        exact: true,
+      },
       { to: '/accession', label: 'Accession', icon: 'plus', capability: 'accession' },
       { to: '/cases', label: 'Cases', icon: 'cases', capability: 'cases' },
       {
@@ -55,12 +61,25 @@ const sections: NavSection[] = [
     ],
   },
   {
+    label: 'Platform',
+    items: [
+      {
+        to: '/super-admin',
+        label: 'Organizations',
+        icon: 'external',
+        capability: 'platform',
+        exact: true,
+      },
+    ],
+  },
+  {
     label: 'Locate',
     items: [{ to: '/locator', label: 'Specimen locator', icon: 'search', capability: 'locator' }],
   },
   {
     label: 'Administration',
     items: [
+      { to: '/admin', label: 'Configuration', icon: 'settings', capability: 'admin', exact: true },
       { to: '/admin/users', label: 'Staff', icon: 'users', capability: 'admin' },
       {
         to: '/admin/protocols',
@@ -219,7 +238,7 @@ onBeforeUnmount(() => {
           </button>
 
           <NuxtLink
-            to="/"
+            to="/dashboard"
             class="flex h-9 w-9 shrink-0 items-center justify-center bg-accent font-display text-base text-accent-ink lg:hidden"
             aria-label="Dashboard"
           >

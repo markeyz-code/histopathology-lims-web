@@ -41,7 +41,13 @@ export const useAuthStore = defineStore('auth', () => {
   const capabilities = computed<readonly Capability[]>(() =>
     role.value ? ROLE_CAPABILITIES[role.value] : [],
   );
-  const homePath = computed(() => (role.value === 'REFERRER' ? '/referrer' : '/'));
+  const homePath = computed(() =>
+    role.value === 'REFERRER'
+      ? '/referrer'
+      : role.value === 'SUPER_ADMIN'
+        ? '/super-admin'
+        : '/dashboard',
+  );
   const enabledDisciplines = computed<Discipline[]>(
     () => lab.value?.enabledDisciplines ?? ['HISTOPATHOLOGY'],
   );

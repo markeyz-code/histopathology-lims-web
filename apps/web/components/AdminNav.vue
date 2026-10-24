@@ -10,6 +10,7 @@ const tabs: Array<{
   icon: IconName;
   capability: Capability;
 }> = [
+  { to: '/admin', label: 'Overview', icon: 'dashboard', capability: 'admin' },
   { to: '/admin/users', label: 'Users', icon: 'users', capability: 'admin' },
   { to: '/admin/protocols', label: 'Protocols', icon: 'protocols', capability: 'admin' },
   { to: '/admin/catalog', label: 'Test catalogue', icon: 'beaker', capability: 'admin' },
@@ -35,7 +36,7 @@ const visible = computed(() => tabs.filter((tab) => auth.can(tab.capability)));
       :to="tab.to"
       class="-mb-px flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 font-mono text-2xs uppercase tracking-caps transition-colors"
       :class="
-        route.path === tab.to
+        route.path === tab.to || (tab.to === '/admin' && route.path === '/admin')
           ? 'border-accent text-ink'
           : 'border-transparent text-muted hover:text-ink'
       "
