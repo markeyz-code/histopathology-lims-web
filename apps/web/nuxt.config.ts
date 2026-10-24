@@ -7,6 +7,19 @@ try {
   // No root .env (Docker and CI inject environment variables directly).
 }
 
+const publicApiBase = (process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:4000/api').replace(
+  /\/$/,
+  '',
+);
+const publicWebBase = (process.env.NUXT_PUBLIC_WEB_BASE || 'http://localhost:3000').replace(
+  /\/$/,
+  '',
+);
+const cookieSecure = process.env.NUXT_PUBLIC_COOKIE_SECURE === 'true';
+if (process.env.VERCEL === '1' && !process.env.NUXT_PUBLIC_API_BASE) {
+  throw new Error('NUXT_PUBLIC_API_BASE must be configured for the Vercel production build.');
+}
+
 export default defineNuxtConfig({
   components: [
     { path: '~/components', pathPrefix: false },
@@ -20,9 +33,10 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:4000/api',
+      apiBase: publicApiBase,
       appName: process.env.NUXT_PUBLIC_APP_NAME || 'Laboratory LIMS',
-      webBase: process.env.NUXT_PUBLIC_WEB_BASE || 'http://localhost:3000',
+      webBase: publicWebBase,
+      cookieSecure,
     },
   },
   app: {

@@ -9,12 +9,13 @@ const boolFromEnv = (defaultValue: 'true' | 'false') =>
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    PORT: z.coerce.number().int().min(1).max(65_535).optional(),
     API_PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
     API_PREFIX: z.string().min(1).max(40).default('api'),
     CORS_ORIGINS: z.string().default('http://localhost:3000'),
     PUBLIC_WEB_URL: z.string().url().default('http://localhost:3000'),
     PUBLIC_API_URL: z.string().url().default('http://localhost:4000/api'),
-    SWAGGER_ENABLED: boolFromEnv('true'),
+    SWAGGER_ENABLED: boolFromEnv('false'),
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
       .default('info'),
@@ -35,6 +36,7 @@ const envSchema = z
       .regex(/^\d+[smhd]$/)
       .default('7d'),
     STORAGE_DIR: z.string().min(1).default('./storage'),
+    TRUST_PROXY: z.coerce.number().int().min(1).max(10).default(1),
     SEED_RESET: boolFromEnv('false'),
 
     // Phase 2 — referral portal and notification delivery
@@ -83,6 +85,40 @@ const envSchema = z
             message: `${key} must not use the development default in production.`,
           });
         }
+      }
+    }
+
+    if (value.NODE_ENV === 'production') {
+      if (value.PORTAL_DEBUG) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['PORTAL_DEBUG'],
+          message: 'PORTAL_DEBUG must be false in production.',
+        });
+      }
+      if (value.SEED_RESET) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['SEED_RESET'],
+          message: 'SEED_RESET must be false in production.',
+        });
+      }
+      if (!value.CORS_ORIGINS.split(',').every((origin) => origin.trim().startsWith('https://'))) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['CORS_ORIGINS'],
+          message: 'Production CORS_ORIGINS must contain only HTTPS origins.',
+        });
+      }
+      if (
+        !value.PUBLIC_WEB_URL.startsWith('https://') ||
+        !value.PUBLIC_API_URL.startsWith('https://')
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['PUBLIC_WEB_URL'],
+          message: 'Production PUBLIC_WEB_URL and PUBLIC_API_URL must use HTTPS.',
+        });
       }
     }
 

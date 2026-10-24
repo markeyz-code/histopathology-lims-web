@@ -17,19 +17,20 @@ interface MeResponse {
 export const useAuthStore = defineStore('auth', () => {
   const config = useRuntimeConfig();
   const apiBase = String(config.public.apiBase).replace(/\/$/, '');
+  const cookieSecure = config.public.cookieSecure === true;
 
   const user = ref<User | null>(null);
   const lab = ref<Lab | null>(null);
   const initialised = ref(false);
   const accessToken = useCookie<string | null>('lims_at', {
     sameSite: 'lax',
-    secure: false,
+    secure: cookieSecure,
     path: '/',
     maxAge: 60 * 15,
   });
   const refreshToken = useCookie<string | null>('lims_rt', {
     sameSite: 'lax',
-    secure: false,
+    secure: cookieSecure,
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
   });

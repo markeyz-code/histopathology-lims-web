@@ -22,14 +22,14 @@ async function bootstrap(): Promise<void> {
   app.useGlobalInterceptors(new LoggerErrorInterceptor());
 
   const nodeEnv = config.get<string>('NODE_ENV') ?? 'development';
-  const port = config.get<number>('API_PORT') ?? 4000;
+  const port = Number(process.env.PORT ?? config.get<number>('API_PORT') ?? 4000);
   const prefix = config.get<string>('API_PREFIX') ?? 'api';
   const origins = (config.get<string>('CORS_ORIGINS') ?? 'http://localhost:3000')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
 
-  app.set('trust proxy', 1);
+  app.set('trust proxy', config.get<number>('TRUST_PROXY') ?? 1);
   app.use(
     helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }),
   );

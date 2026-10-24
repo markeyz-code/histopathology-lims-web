@@ -15,6 +15,8 @@
     "test:e2e": "jest --config test/jest-e2e.config.cjs --runInBand",
     "seed": "ts-node src/seed/run-seed.ts",
     "seed:reset": "SEED_RESET=true ts-node src/seed/run-seed.ts",
+    "bootstrap:superadmin": "ts-node src/seed/bootstrap-superadmin.ts",
+    "bootstrap:superadmin:dist": "node dist/seed/bootstrap-superadmin.js",
     "migrate:phase15": "ts-node src/migrations/phase15-backfill.ts",
     "migrate:phase15:dist": "node dist/migrations/phase15-backfill.js"
   },

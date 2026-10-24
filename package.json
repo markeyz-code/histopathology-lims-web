@@ -25,6 +25,8 @@
     "test:e2e": "pnpm --filter @lims/api test:e2e",
     "seed": "pnpm --filter @lims/api seed",
     "seed:reset": "pnpm --filter @lims/api seed:reset",
+    "bootstrap:superadmin": "pnpm --filter @lims/api bootstrap:superadmin",
+    "bootstrap:superadmin:prod": "pnpm --filter @lims/api bootstrap:superadmin:dist",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f api web",

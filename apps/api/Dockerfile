@@ -17,9 +17,12 @@ RUN pnpm --filter @lims/shared build \
 
 FROM node:22-alpine AS runner
 WORKDIR /app
+RUN apk add --no-cache su-exec
 ENV NODE_ENV=production
+ENV STORAGE_DIR=/data/storage
 COPY --from=build --chown=node:node /prod/api ./
-RUN mkdir -p /app/storage && chown -R node:node /app
-USER node
+COPY --chown=root:root apps/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh && mkdir -p /data/storage && chown -R node:node /data
+ENTRYPOINT ["docker-entrypoint.sh"]
 EXPOSE 4000 2575
 CMD ["node", "dist/main.js"]

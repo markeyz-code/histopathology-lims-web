@@ -1,6 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Res } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import type { Connection } from 'mongoose';
 import { Public } from '../decorators/auth.decorators';
 
@@ -11,9 +12,10 @@ export class HealthController {
 
   @Public()
   @Get()
-  @ApiOperation({ summary: 'Liveness and database configuration probe' })
-  check() {
+  @ApiOperation({ summary: 'Liveness and database readiness probe' })
+  check(@Res({ passthrough: true }) response: Response) {
     const readyState = this.connection.readyState;
+    if (readyState !== 1) response.status(503);
     return {
       status: readyState === 1 ? 'ok' : 'degraded',
       service: 'histopathology-lims-api',
