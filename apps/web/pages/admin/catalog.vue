@@ -161,7 +161,7 @@ onMounted(load);
           >
         </div>
         <div class="overflow-x-auto">
-          <table class="data-table">
+          <table class="data-table mobile-cards">
             <thead>
               <tr>
                 <th>Discipline</th>
@@ -174,21 +174,21 @@ onMounted(load);
             </thead>
             <tbody>
               <tr v-for="test in tests" :key="test.id">
-                <td class="text-xs text-muted">{{ DISCIPLINE_LABELS[test.discipline] }}</td>
-                <td>
+                <td data-label="Discipline" class="text-xs text-muted">{{ DISCIPLINE_LABELS[test.discipline] }}</td>
+                <td data-label="Test">
                   <p class="mono text-[10px] text-accent">{{ test.code }}</p>
                   <p class="mt-0.5 text-sm font-medium">{{ test.name }}</p>
                 </td>
-                <td class="text-xs text-muted">{{ test.specimenType }}</td>
-                <td class="text-xs">{{ test.analytes.length }}</td>
-                <td>
+                <td data-label="Specimen" class="text-xs text-muted">{{ test.specimenType }}</td>
+                <td data-label="Analytes" class="text-xs">{{ test.analytes.length }}</td>
+                <td data-label="Status">
                   <span
                     class="font-mono text-[9px] uppercase tracking-wide2"
                     :class="test.active ? 'text-success' : 'text-muted'"
                     >{{ test.active ? 'Active' : 'Inactive' }}</span
                   >
                 </td>
-                <td class="text-right">
+                <td data-label="Action" class="text-right">
                   <button type="button" class="btn btn-ghost btn-sm" @click="openEdit(test)">
                     Edit
                   </button>

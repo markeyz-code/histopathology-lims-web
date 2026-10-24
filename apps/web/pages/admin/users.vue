@@ -265,7 +265,7 @@ onMounted(() => load());
         <button type="button" class="btn btn-primary" @click="openCreate">New staff account</button>
       </EmptyState>
       <div v-else class="overflow-x-auto">
-        <table class="data-table">
+        <table class="data-table mobile-cards">
           <thead>
             <tr>
               <th scope="col">Name</th>
@@ -278,11 +278,11 @@ onMounted(() => load());
           </thead>
           <tbody>
             <tr v-for="user in users" :key="user.id">
-              <td>
+              <td data-label="Name">
                 <p class="text-sm font-medium">{{ user.name }}</p>
                 <p class="mono text-[10px] text-muted">{{ user.email }}</p>
               </td>
-              <td>
+              <td data-label="Role">
                 <span
                   class="inline-flex border border-line bg-canvas px-2 py-1 font-mono text-[9px] uppercase tracking-wide2 text-muted"
                 >
@@ -295,10 +295,10 @@ onMounted(() => load());
                   {{ disciplineNames(user) }}
                 </p>
               </td>
-              <td class="max-w-[220px] text-xs text-muted">
+              <td data-label="Subspecialties" class="max-w-[220px] text-xs text-muted">
                 {{ user.subspecialties.length > 0 ? user.subspecialties.join(', ') : '—' }}
               </td>
-              <td>
+              <td data-label="Status">
                 <span
                   class="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-wide2"
                   :class="user.active ? 'text-success' : 'text-danger'"
@@ -307,13 +307,13 @@ onMounted(() => load());
                   {{ user.active ? 'Active' : 'Inactive' }}
                 </span>
               </td>
-              <td
+              <td data-label="Last sign-in"
                 class="whitespace-nowrap font-mono text-[10px] text-muted"
                 :title="user.lastLoginAt ?? undefined"
               >
                 {{ user.lastLoginAt ? relative(user.lastLoginAt) : 'Never' }}
               </td>
-              <td>
+              <td data-label="Actions">
                 <div class="flex justify-end gap-1">
                   <button
                     type="button"

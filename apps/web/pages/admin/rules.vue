@@ -156,7 +156,7 @@ onMounted(load);
     <ErrorState v-if="error" :message="error" @retry="load" />
     <LoadingSkeleton v-else-if="loading" :rows="8" />
     <section v-else class="panel overflow-x-auto">
-      <table class="data-table">
+      <table class="data-table mobile-cards">
         <thead>
           <tr>
             <th>Rule</th>
@@ -170,27 +170,27 @@ onMounted(load);
         </thead>
         <tbody>
           <tr v-for="rule in rules" :key="rule.id">
-            <td>
+            <td data-label="Rule">
               <p class="mono text-[10px] text-accent">{{ rule.code }}</p>
               <p class="mt-0.5 text-sm font-medium">{{ rule.name }}</p>
               <p class="mt-0.5 text-[10px] text-muted">
                 {{ rule.actions.map((action) => action.type).join(' · ') }}
               </p>
             </td>
-            <td class="text-xs text-muted">{{ DISCIPLINE_LABELS[rule.discipline] }}</td>
-            <td class="font-mono text-[10px]">{{ rule.trigger }}</td>
-            <td class="text-xs">
+            <td data-label="Discipline" class="text-xs text-muted">{{ DISCIPLINE_LABELS[rule.discipline] }}</td>
+            <td data-label="Trigger" class="font-mono text-[10px]">{{ rule.trigger }}</td>
+            <td data-label="Tests" class="text-xs">
               {{ rule.testCodes.length ? rule.testCodes.join(', ') : 'All tests' }}
             </td>
-            <td class="mono text-xs">{{ rule.priority }}</td>
-            <td>
+            <td data-label="Priority" class="mono text-xs">{{ rule.priority }}</td>
+            <td data-label="Status">
               <span
                 class="font-mono text-[9px] uppercase tracking-wide2"
                 :class="rule.active ? 'text-success' : 'text-muted'"
                 >{{ rule.active ? 'Active' : 'Inactive' }}</span
               >
             </td>
-            <td class="text-right">
+            <td data-label="Action" class="text-right">
               <button type="button" class="btn btn-ghost btn-sm" @click="openEdit(rule)">
                 Edit
               </button>

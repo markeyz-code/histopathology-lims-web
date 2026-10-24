@@ -165,7 +165,7 @@ onMounted(load);
         :bordered="false"
       />
       <div v-else class="overflow-x-auto">
-        <table class="data-table">
+        <table class="data-table mobile-cards">
           <thead>
             <tr>
               <th scope="col">Time</th>
@@ -178,11 +178,11 @@ onMounted(load);
           </thead>
           <tbody>
             <tr v-for="log in logs" :key="log.id" class="cursor-pointer" @click="openDetail(log)">
-              <td class="whitespace-nowrap font-mono text-[10px]" :title="dateTime(log.createdAt)">
+              <td data-label="Time" class="whitespace-nowrap font-mono text-[10px]" :title="dateTime(log.createdAt)">
                 {{ dateTime(log.createdAt) }}
                 <span class="block text-[9px] text-muted">{{ relative(log.createdAt) }}</span>
               </td>
-              <td>
+              <td data-label="Action">
                 <span
                   class="inline-flex border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide2"
                   :class="actionClass(log.action)"
@@ -190,16 +190,16 @@ onMounted(load);
                   {{ log.action.replace('_', ' ') }}
                 </span>
               </td>
-              <td class="text-xs">
+              <td data-label="Entity" class="text-xs">
                 <span class="font-medium">{{ log.entityType }}</span>
                 <span class="mono block text-[9px] text-muted">{{ log.entityId ?? '—' }}</span>
               </td>
-              <td class="text-xs">
+              <td data-label="Actor" class="text-xs">
                 {{ log.userName }}
                 <span class="block font-mono text-[9px] text-muted">{{ log.userRole ?? '—' }}</span>
               </td>
-              <td class="mono text-[10px] text-muted">{{ log.caseId ?? '—' }}</td>
-              <td class="mono text-[9px] text-muted">{{ log.requestId ?? '—' }}</td>
+              <td data-label="Case" class="mono text-[10px] text-muted">{{ log.caseId ?? '—' }}</td>
+              <td data-label="Request" class="mono text-[9px] text-muted">{{ log.requestId ?? '—' }}</td>
             </tr>
           </tbody>
         </table>

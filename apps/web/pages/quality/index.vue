@@ -357,7 +357,7 @@ onMounted(load);
         </div>
       </div>
       <div class="overflow-x-auto">
-        <table class="data-table">
+        <table class="data-table mobile-cards">
           <thead>
             <tr>
               <th>Case</th>
@@ -370,16 +370,16 @@ onMounted(load);
           </thead>
           <tbody>
             <tr v-for="row in sendOuts" :key="row.id">
-              <td class="mono text-[10px]">{{ row.accessionNumber }}</td>
-              <td class="text-xs">{{ row.testName }}</td>
-              <td class="text-xs">{{ row.referenceLab }}</td>
-              <td class="text-xs text-muted">{{ row.trackingNumber ?? row.courier ?? '—' }}</td>
-              <td>
+              <td data-label="Case" class="mono text-[10px]">{{ row.accessionNumber }}</td>
+              <td data-label="Test" class="text-xs">{{ row.testName }}</td>
+              <td data-label="Reference lab" class="text-xs">{{ row.referenceLab }}</td>
+              <td data-label="Courier" class="text-xs text-muted">{{ row.trackingNumber ?? row.courier ?? '—' }}</td>
+              <td data-label="Status">
                 <span class="font-mono text-[9px]" :class="statusClass(row.status)">{{
                   row.status
                 }}</span>
               </td>
-              <td class="text-right">
+              <td data-label="Action" class="text-right">
                 <button
                   v-if="row.status === 'SENT'"
                   type="button"

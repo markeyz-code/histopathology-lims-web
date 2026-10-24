@@ -372,7 +372,7 @@ onMounted(load);
           No lots in this view.
         </div>
         <div v-else class="overflow-x-auto">
-          <table class="data-table">
+          <table class="data-table mobile-cards">
             <thead>
               <tr>
                 <th>Product</th>
@@ -385,17 +385,17 @@ onMounted(load);
             </thead>
             <tbody>
               <tr v-for="lot in displayed" :key="lot.id">
-                <td>
+                <td data-label="Product">
                   <p class="text-xs font-medium">{{ lot.name }}</p>
                   <p class="mono mt-0.5 text-[9px] uppercase text-muted">
                     {{ REAGENT_CATEGORY_LABELS[lot.category] }}
                   </p>
                 </td>
-                <td>
+                <td data-label="Lot / vendor">
                   <p class="mono text-[10px]">{{ lot.lotNumber }}</p>
                   <p class="mt-0.5 text-[10px] text-muted">{{ lot.vendor }}</p>
                 </td>
-                <td :class="new Date(lot.expiresAt) < new Date() ? 'text-danger' : ''">
+                <td data-label="Expiry" :class="new Date(lot.expiresAt) < new Date() ? 'text-danger' : ''">
                   <span class="text-xs">{{ date(lot.expiresAt) }}</span>
                   <p
                     v-if="new Date(lot.expiresAt) < new Date()"
@@ -404,11 +404,11 @@ onMounted(load);
                     expired
                   </p>
                 </td>
-                <td>
+                <td data-label="Stock">
                   <span class="text-xs">{{ lot.quantity }} {{ lot.unit }}</span>
                   <p class="mono mt-0.5 text-[9px] text-muted">of {{ lot.initialQuantity }}</p>
                 </td>
-                <td>
+                <td data-label="State">
                   <p class="mono text-[9px] uppercase" :class="statusClass(lot)">
                     {{ lot.status }}
                   </p>
@@ -416,7 +416,7 @@ onMounted(load);
                     {{ lot.validationStatus }}
                   </p>
                 </td>
-                <td class="text-right">
+                <td data-label="Actions" class="text-right">
                   <div class="flex justify-end gap-1">
                     <button
                       v-if="lot.validationStatus === 'PENDING' && lot.status !== 'EXPIRED'"

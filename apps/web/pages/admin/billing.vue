@@ -289,7 +289,7 @@ void ([] as InvoiceItem[]);
         No invoices yet.
       </div>
       <div v-else class="overflow-x-auto">
-        <table class="data-table">
+        <table class="data-table mobile-cards">
           <thead>
             <tr>
               <th>Invoice</th>
@@ -304,33 +304,33 @@ void ([] as InvoiceItem[]);
           </thead>
           <tbody>
             <tr v-for="invoice in invoices" :key="invoice.id">
-              <td>
+              <td data-label="Invoice">
                 <p class="mono text-[10px]">{{ invoice.number }}</p>
                 <p class="mt-0.5 text-[9px] text-muted">
                   {{ invoice.issuedAt ? date(invoice.issuedAt) : '' }}
                 </p>
               </td>
-              <td>
+              <td data-label="Patient / case">
                 <p class="text-xs font-medium">{{ invoice.patientName }}</p>
                 <p class="mono mt-0.5 text-[9px] text-accent">{{ invoice.accessionNumber }}</p>
               </td>
-              <td>
+              <td data-label="Payer">
                 <p class="text-xs">{{ PAYER_TYPE_LABELS[invoice.payerType] }}</p>
                 <p v-if="invoice.hmoName" class="mt-0.5 text-[9px] text-muted">
                   {{ invoice.hmoName }}
                 </p>
               </td>
-              <td class="mono text-xs">₦{{ invoice.total.toLocaleString() }}</td>
-              <td class="mono text-xs">₦{{ invoice.amountPaid.toLocaleString() }}</td>
-              <td class="mono text-xs">₦{{ invoice.balance.toLocaleString() }}</td>
-              <td>
+              <td data-label="Total" class="mono text-xs">₦{{ invoice.total.toLocaleString() }}</td>
+              <td data-label="Paid" class="mono text-xs">₦{{ invoice.amountPaid.toLocaleString() }}</td>
+              <td data-label="Balance" class="mono text-xs">₦{{ invoice.balance.toLocaleString() }}</td>
+              <td data-label="Status">
                 <span
                   class="border px-2 py-1 font-mono text-[9px] uppercase tracking-caps"
                   :class="statusClass(invoice)"
                   >{{ INVOICE_STATUS_LABELS[invoice.status] }}</span
                 >
               </td>
-              <td class="text-right">
+              <td data-label="Actions" class="text-right">
                 <div class="flex justify-end gap-1">
                   <button
                     v-if="invoice.balance > 0 && invoice.status !== 'VOID'"
