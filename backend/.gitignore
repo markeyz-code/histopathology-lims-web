@@ -1,0 +1,34 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+**/dist/
+*.tsbuildinfo
+
+# env & secrets
+.env
+.env.*
+!.env.example
+!.env.production.example
+!.env.*.example
+
+# storage (generated PDFs)
+storage/
+/storage
+
+# test artifacts
+coverage/
+test-results/
+.mongo-memory-server/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
+logs/
+.tmp/
