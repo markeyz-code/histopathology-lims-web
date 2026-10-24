@@ -1,5 +1,13 @@
 <script setup lang="ts">
-const open = defineModel<boolean>({ default: false });
+const modelOpen = defineModel<boolean>({ default: false });
+const propOpen = defineModel<boolean>('open', { default: false });
+const open = computed({
+  get: () => modelOpen.value || propOpen.value,
+  set: (value: boolean) => {
+    modelOpen.value = value;
+    propOpen.value = value;
+  },
+});
 
 const props = withDefaults(
   defineProps<{

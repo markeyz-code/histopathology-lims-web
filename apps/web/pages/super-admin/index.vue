@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Organization, SuperAdminOverview } from '@lims/shared';
+import type { Lead, Organization, SuperAdminOverview } from '@lims/shared';
 import {
   DISCIPLINES,
   DISCIPLINE_LABELS,
@@ -15,6 +15,7 @@ const toast = useToast();
 const { date } = useFormat();
 const overview = ref<SuperAdminOverview | null>(null);
 const organizations = ref<Organization[]>([]);
+const leads = ref<Lead[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
 const wizardOpen = ref(false);
@@ -58,9 +59,10 @@ async function load(): Promise<void> {
   loading.value = true;
   error.value = null;
   try {
-    [overview.value, organizations.value] = await Promise.all([
+    [overview.value, organizations.value, leads.value] = await Promise.all([
       api.get<SuperAdminOverview>('/super-admin/overview'),
       api.get<Organization[]>('/super-admin/organizations'),
+      api.get<Lead[]>('/super-admin/leads'),
     ]);
   } catch (caught) {
     error.value = apiErrorMessage(caught);
@@ -105,6 +107,15 @@ async function submit(): Promise<void> {
     toast.error('Onboarding failed', apiErrorMessage(caught));
   } finally {
     saving.value = false;
+  }
+}
+
+async function setLeadStatus(lead: Lead, status: string): Promise<void> {
+  try {
+    await api.patch(`/super-admin/leads/${lead.id}`, { status });
+    await load();
+  } catch (caught) {
+    toast.error('Could not update lead', apiErrorMessage(caught));
   }
 }
 
@@ -231,6 +242,78 @@ onMounted(load);
         </div>
       </section>
     </template>
+
+    <section class="panel mt-5">
+      <div class="flex items-center justify-between border-b border-line px-5 py-4">
+        <div>
+          <p class="label-caps">Commercial enquiries</p>
+          <p class="mt-1 text-xs text-muted">
+            Demo, trial and support requests from the public landing page.
+          </p>
+        </div>
+        <span class="font-mono text-[9px] text-muted"
+          >{{ leads.filter((lead) => lead.status === 'NEW').length }} new</span
+        >
+      </div>
+      <div v-if="leads.length === 0" class="p-5 text-sm text-muted">No enquiries yet.</div>
+      <div v-else class="divide-y divide-line">
+        <article
+          v-for="lead in leads"
+          :key="lead.id"
+          class="flex flex-wrap items-start justify-between gap-3 px-5 py-3"
+        >
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-[9px] uppercase text-accent">{{ lead.type }}</span
+              ><span
+                class="font-mono text-[9px] uppercase"
+                :class="
+                  lead.status === 'NEW'
+                    ? 'text-warning'
+                    : lead.status === 'CLOSED'
+                      ? 'text-muted'
+                      : 'text-success'
+                "
+                >{{ lead.status }}</span
+              >
+            </div>
+            <p class="mt-1 text-sm font-medium">{{ lead.organizationName }}</p>
+            <p class="text-[11px] text-muted">
+              {{ lead.contactName }} · {{ lead.email }}{{ lead.phone ? ' · ' + lead.phone : '' }}
+            </p>
+            <p v-if="lead.departments.length" class="mt-1 text-[10px] text-muted">
+              {{ lead.departments.join(' · ') }}
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              v-if="lead.status === 'NEW'"
+              type="button"
+              class="btn btn-ghost btn-sm"
+              @click="setLeadStatus(lead, 'CONTACTED')"
+            >
+              Mark contacted
+            </button>
+            <button
+              v-if="lead.status === 'CONTACTED'"
+              type="button"
+              class="btn btn-ghost btn-sm"
+              @click="setLeadStatus(lead, 'QUALIFIED')"
+            >
+              Qualify
+            </button>
+            <button
+              v-if="lead.status !== 'CLOSED'"
+              type="button"
+              class="btn btn-ghost btn-sm"
+              @click="setLeadStatus(lead, 'CLOSED')"
+            >
+              Close
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
 
     <AppModal
       v-model="wizardOpen"

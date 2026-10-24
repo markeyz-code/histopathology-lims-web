@@ -7,10 +7,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const auth = useAuthStore();
   await auth.restore();
 
-  const publicPrefixes = ['/login', '/portal', '/verify', '/offline', '/payments'];
-  const isPublic = publicPrefixes.some(
-    (prefix) => to.path === prefix || to.path.startsWith(`${prefix}/`),
-  );
+  const publicPrefixes = ['/login', '/portal', '/verify', '/offline', '/payments', '/landing'];
+  const isPublic =
+    to.path === '/' ||
+    publicPrefixes.some((prefix) => to.path === prefix || to.path.startsWith(`${prefix}/`));
 
   if (!auth.isAuthenticated && !isPublic) {
     return navigateTo({ path: '/login', query: { redirect: to.fullPath } });

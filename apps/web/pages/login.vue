@@ -170,6 +170,14 @@ async function submit(): Promise<void> {
       Referring clinician? Use a one-time link
     </NuxtLink>
 
+    <NuxtLink
+      to="/landing"
+      class="mt-2 flex items-center justify-center gap-2 border border-line bg-surface px-3 py-2.5 font-mono text-[9px] uppercase tracking-caps text-muted transition-colors hover:border-accent hover:text-ink"
+    >
+      <AppIcon name="external" :size="13" />
+      Hospital Overview &amp; Product Tour
+    </NuxtLink>
+
     <details v-if="isLocalDemo" class="mt-7 border border-line bg-surface">
       <summary
         class="cursor-pointer px-4 py-3 font-mono text-2xs uppercase tracking-caps text-muted marker:text-accent"

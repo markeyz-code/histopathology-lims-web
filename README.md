@@ -36,6 +36,8 @@ Histopathology keeps the block-and-slide custody model: a specimen becomes casse
 - Starter catalogue, disciplines and letterhead provisioned automatically.
 - Every laboratory gets `/admin` with configuration checklist, staff, catalogue, rules, protocols, settings and integrations.
 - Suspend/restore laboratories, manage organizations, plans and seats.
+- Public landing page support/commercial section, departmental demo cards, tracked demo/trial/support enquiries, and a one-month free-trial request flow.
+- Super-admin commercial enquiry pipeline with NEW → CONTACTED → QUALIFIED → CLOSED qualification.
 
 Details: [docs/b2b-onboarding.md](docs/b2b-onboarding.md).
 
@@ -423,7 +425,7 @@ pnpm test:e2e
 pnpm verify
 ```
 
-The E2E suite (23 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
+The E2E suite (24 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
 
 - accessioning generates a formatted accession number and unique specimen barcode
 - role checks and invalid scan transitions reject correctly
@@ -452,6 +454,7 @@ The E2E suite (23 tests) starts an ephemeral MongoDB **replica set** with `mongo
 - equipment temperature, non-conformance/CAPA and a send-out lifecycle are recorded
 - an ASTM instrument message is parsed and matched to an accession
 - a hospital laboratory is onboarded, its administrator accepts the invitation and signs into the new tenant
+- a public trial enquiry is captured and qualified by the super administrator
 
 ## Design direction
 

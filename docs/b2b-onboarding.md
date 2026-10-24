@@ -78,3 +78,23 @@ All platform endpoints are `SUPER_ADMIN`-only. Invitations are single-use, hashe
 ## Tests
 
 The E2E suite includes onboarding a new hospital laboratory, accepting the invitation, signing in with the new tenant, and reading its provisioned catalogue.
+
+## Landing page, support and commercial pipeline
+
+The public landing page now includes:
+
+- a **Support & Commercial** section with support email, sales email, WhatsApp and a tracked support form;
+- a **one-month free trial** call to action, with trial scope agreed in a short consultation;
+- department-specific sandbox cards for Histopathology, Clinical Chemistry, Haematology and Medical Microbiology, each with demo credentials and a departmental walkthrough request;
+- a demo/trial request modal using the searchable `SearchSelect` instead of native selects;
+- working demo, trial and support submissions stored as `leads` and visible to the super administrator under `/super-admin` with qualification status.
+
+Public API:
+
+```
+POST /api/leads
+GET  /api/super-admin/leads
+PATCH /api/super-admin/leads/:id
+```
+
+Landing support addresses are demo values (`support@lims.africa`, `sales@lims.africa`) and should be replaced with the production support desk before launch.

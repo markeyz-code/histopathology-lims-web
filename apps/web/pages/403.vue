@@ -10,7 +10,7 @@ const auth = useAuthStore();
       eyebrow="403 · Access denied"
       title="This door is for another role."
       description="Your account is signed in, but this area is restricted by laboratory policy. If you believe this is wrong, ask the laboratory administrator."
-      back-to="/"
+      back-to="/dashboard"
       back-label="Back to dashboard"
     />
     <div class="grid gap-4 sm:grid-cols-3">
@@ -32,7 +32,7 @@ const auth = useAuthStore();
       </div>
     </div>
     <div class="mt-6 flex gap-2">
-      <NuxtLink to="/" class="btn btn-primary">Dashboard</NuxtLink>
+      <NuxtLink to="/dashboard" class="btn btn-primary">Dashboard</NuxtLink>
       <NuxtLink to="/cases" class="btn btn-secondary">Case register</NuxtLink>
     </div>
   </div>
