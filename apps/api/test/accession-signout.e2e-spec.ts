@@ -1242,6 +1242,72 @@ describe('Accession to sign-out (e2e)', () => {
     expect(chemCaseId).toBeTruthy();
   });
 
+  it('prints result PDFs and moves a sample through a collection centre consignment', async () => {
+    const accession = await request(http)
+      .post('/api/cases/accession')
+      .set(auth(tokens.receptionist))
+      .send({
+        patient: {
+          firstName: 'Rider',
+          lastName: 'Sample',
+          sex: 'FEMALE',
+          age: 30,
+          mrn: `P3-${unique}`,
+        },
+        referringClinician: { name: 'Dr Phase Three', email: users.referrer },
+        clinicalHistory: 'Pre-analytical handoff test.',
+        priority: 'ROUTINE',
+        discipline: 'HAEMATOLOGY',
+        specimens: [{ specimenType: 'EDTA blood', site: 'Antecubital fossa' }],
+      })
+      .expect(201);
+    const requestId = accession.body.testRequests[0].id as string;
+    const centre = await request(http)
+      .post('/api/preanalytics/centres')
+      .set(auth(tokens.receptionist))
+      .send({
+        code: `CC-${unique}`,
+        name: 'Ikeja collection hub',
+        homeCollection: true,
+        phone: '+234 800 000 0000',
+      })
+      .expect(201);
+    const consignment = await request(http)
+      .post('/api/preanalytics/consignments')
+      .set(auth(tokens.receptionist))
+      .send({
+        centreId: centre.body.id,
+        testRequestIds: [requestId],
+        riderName: 'Rider One',
+        riderPhone: '+234 800 111 2222',
+      })
+      .expect(201);
+    expect(consignment.body.testRequestCount).toBe(1);
+    const dispatched = await request(http)
+      .post(`/api/preanalytics/consignments/${consignment.body.id}/dispatch`)
+      .set(auth(tokens.receptionist))
+      .expect(201);
+    expect(dispatched.body.status).toBe('DISPATCHED');
+    const received = await request(http)
+      .post(`/api/preanalytics/consignments/${consignment.body.id}/receive`)
+      .set(auth(tokens.receptionist))
+      .send({ accepted: true })
+      .expect(201);
+    expect(received.body.status).toBe('RECEIVED');
+
+    const resultPdf = await request(http)
+      .get('/api/results/000000000000000000000000/pdf')
+      .set(auth(tokens.pathologist))
+      .expect(404);
+    expect(resultPdf.body.message).toBe('Result not found.');
+
+    const cumulative = await request(http)
+      .get(`/api/results/cumulative/${accession.body.patient.id}/pdf`)
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(cumulative.headers['content-type']).toContain('application/pdf');
+  });
+
   it('keeps the worklist and dashboard tenant-scoped and TAT-aware', async () => {
     const worklist = await request(http)
       .get('/api/worklist')
