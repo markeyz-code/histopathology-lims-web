@@ -39,6 +39,8 @@ export interface LabEntity {
   currency: string;
   enabledDisciplines: Discipline[];
   accessionPrefixes: Partial<Record<Discipline, string>>;
+  organizationId: Types.ObjectId | null;
+  onboardingCompletedAt: Date | null;
   letterhead: LabLetterhead;
   active: boolean;
   createdAt: Date;
@@ -99,6 +101,8 @@ export const LabSchema = new Schema<LabEntity>(
       },
     },
     accessionPrefixes: { type: Schema.Types.Mixed, default: {} },
+    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', default: null },
+    onboardingCompletedAt: { type: Date, default: null },
     letterhead: { type: letterheadSchema, default: () => ({}) },
     active: { type: Boolean, default: true },
   },

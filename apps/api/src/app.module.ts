@@ -27,6 +27,7 @@ import { PreanalyticsModule } from './core/preanalytics/preanalytics.module';
 import { MicrobiologyModule } from './disciplines/microbiology/microbiology.module';
 import { QualityModule } from './core/quality/quality.module';
 import { InstrumentsModule } from './extensions/instruments/instruments.module';
+import { PlatformModule } from './core/platform/platform.module';
 import { DisciplineRegistryModule } from './core/discipline/discipline.module';
 import { DisciplineGuard } from './core/discipline/discipline.guard';
 import { DisciplinesModule } from './disciplines/disciplines.module';
@@ -136,6 +137,7 @@ import { WsiModule } from './extensions/wsi/wsi.module';
     MicrobiologyModule,
     QualityModule,
     InstrumentsModule,
+    PlatformModule,
     ResultsModule,
     DisciplineRegistryModule,
     DisciplinesModule,

@@ -1,8 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model } from 'mongoose';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { verify } from 'jsonwebtoken';
 import type { AuthResponse, Lab, User } from '@lims/shared';
@@ -14,12 +14,13 @@ import {
   type RefreshTokenPayload,
 } from '../../common/auth/authenticated-user';
 import { runWithTenant } from '../../common/context/tenant-context';
-import { hashToken, verifyPassword } from '../../common/utils/crypto';
+import { hashPassword, hashToken, verifyPassword } from '../../common/utils/crypto';
 import { toLab, toUser } from '../../common/serializers/entities';
 import { AuditService } from '../audit/audit.service';
 import { LabModelName, type LabEntity } from '../labs/lab.schema';
 import { UserModelName, type UserEntity } from '../users/user.schema';
 import type { LoginDto } from './dto/auth.dto';
+import { OrganizationModelName, type OrganizationEntity } from '../platform/organization.schema';
 
 interface TokenPair {
   accessToken: string;
@@ -40,6 +41,9 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly audit: AuditService,
+    @InjectConnection() private readonly connection: Connection,
+    @InjectModel(OrganizationModelName)
+    private readonly organizationModel: Model<OrganizationEntity>,
   ) {}
 
   async login(dto: LoginDto): Promise<AuthResponse> {
@@ -47,6 +51,11 @@ export class AuthService {
       .findOne({ code: dto.labCode.toUpperCase(), active: true })
       .exec();
     if (!lab) throw new UnauthorizedException('Invalid laboratory code, email or password.');
+    if (lab.organizationId) {
+      const organization = await this.organizationModel.findById(lab.organizationId).exec();
+      if (organization?.status === 'SUSPENDED')
+        throw new UnauthorizedException('This organization is suspended.');
+    }
 
     const labId = lab._id.toString();
     return runWithTenant({ labId }, async () => {
@@ -80,6 +89,45 @@ export class AuthService {
         user: toUser(user),
         lab: toLab(lab),
       };
+    });
+  }
+
+  async acceptInvite(token: string, password: string): Promise<AuthResponse> {
+    const raw = await this.connection.collection('users').findOne({
+      invitationTokenHash: hashToken(token),
+      invitationExpiresAt: { $gt: new Date() },
+    });
+    if (!raw) throw new UnauthorizedException('This invitation is invalid or has expired.');
+    const labId = raw.labId.toString();
+    return runWithTenant({ labId }, async () => {
+      const user = await this.userModel.findById(raw._id).select('+passwordHash').exec();
+      if (!user || !user.active)
+        throw new UnauthorizedException('This invitation is no longer available.');
+      user.passwordHash = await hashPassword(password);
+      user.mustChangePassword = false;
+      user.invitationTokenHash = null;
+      user.invitationExpiresAt = null;
+      user.refreshTokenHash = null;
+      await user.save();
+      const lab = await this.labModel.findById(labId).exec();
+      if (!lab) throw new UnauthorizedException('Laboratory is no longer available.');
+      const tokens = await this.signTokens(user);
+      user.refreshTokenHash = hashToken(tokens.refreshToken);
+      await user.save();
+      if (user.role === 'LAB_ADMIN' && lab.organizationId) {
+        await this.organizationModel.updateOne(
+          { _id: lab.organizationId, status: 'ONBOARDING' },
+          { $set: { status: 'ACTIVE' } },
+        );
+      }
+      await this.audit.record({
+        action: 'LOGIN',
+        entityType: 'User',
+        entityId: user._id.toString(),
+        metadata: { labCode: lab.code, method: 'invitation' },
+        actor: { userId: user._id.toString(), userName: user.name, userRole: user.role },
+      });
+      return { ...tokens, user: toUser(user), lab: toLab(lab) };
     });
   }
 

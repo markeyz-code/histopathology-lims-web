@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PassportModule } from '@nestjs/passport';
 import { LabModelName, LabSchema } from '../labs/lab.schema';
+import { OrganizationModelName, OrganizationSchema } from '../platform/organization.schema';
 import { UserModelName, UserSchema } from '../users/user.schema';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -23,6 +24,7 @@ import { JwtStrategy } from './jwt.strategy';
     MongooseModule.forFeature([
       { name: UserModelName, schema: UserSchema },
       { name: LabModelName, schema: LabSchema },
+      { name: OrganizationModelName, schema: OrganizationSchema },
     ]),
   ],
   controllers: [AuthController],

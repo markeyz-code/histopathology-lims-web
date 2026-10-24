@@ -44,6 +44,7 @@ export function toUser(user: UserEntity): UserDto {
     ...toUserSummary(user),
     phone: user.phone ?? null,
     active: user.active,
+    mustChangePassword: user.mustChangePassword ?? false,
     lastLoginAt: toIso(user.lastLoginAt),
     createdAt: toIso(user.createdAt) ?? new Date().toISOString(),
   };
@@ -86,6 +87,8 @@ export function toLab(lab: LabEntity): LabDto {
     currency: lab.currency ?? 'NGN',
     enabledDisciplines: [...(lab.enabledDisciplines ?? ['HISTOPATHOLOGY'])],
     accessionPrefixes: { ...(lab.accessionPrefixes ?? {}) },
+    organizationId: lab.organizationId?.toString() ?? null,
+    onboardingCompletedAt: toIso(lab.onboardingCompletedAt),
     letterhead: {
       phone: lab.letterhead?.phone ?? null,
       email: lab.letterhead?.email ?? null,

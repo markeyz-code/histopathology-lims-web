@@ -12,6 +12,9 @@ import type {
   InstrumentMessageStatus,
   InstrumentProtocol,
   NcSeverity,
+  OrganizationStatus,
+  OrganizationType,
+  SubscriptionPlan,
   NcStatus,
   SendOutStatus,
   OrganismGram,
@@ -66,6 +69,7 @@ export interface UserSummary {
 export interface User extends UserSummary {
   phone: string | null;
   active: boolean;
+  mustChangePassword: boolean;
   lastLoginAt: string | null;
   createdAt: string;
 }
@@ -98,6 +102,8 @@ export interface Lab {
   currency: string;
   enabledDisciplines: Discipline[];
   accessionPrefixes: Partial<Record<Discipline, string>>;
+  organizationId: string | null;
+  onboardingCompletedAt: string | null;
   active: boolean;
   createdAt: string;
 }
@@ -1162,4 +1168,68 @@ export interface InstrumentMessage {
   error: string | null;
   rawMessage: string;
   createdAt: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// B2B platform onboarding
+// ─────────────────────────────────────────────────────────────
+
+export interface Organization {
+  id: string;
+  code: string;
+  name: string;
+  type: OrganizationType;
+  status: OrganizationStatus;
+  plan: SubscriptionPlan;
+  seats: number;
+  country: string;
+  state: string | null;
+  city: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  trialEndsAt: string | null;
+  notes: string | null;
+  labCount: number;
+  userCount: number;
+  caseCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SuperAdminOverview {
+  organizations: number;
+  activeOrganizations: number;
+  labs: number;
+  activeLabs: number;
+  users: number;
+  cases: number;
+  trialsEndingSoon: number;
+  recentOrganizations: Organization[];
+}
+
+export interface OrganizationLab {
+  id: string;
+  code: string;
+  name: string;
+  organizationId: string | null;
+  enabledDisciplines: Discipline[];
+  active: boolean;
+  userCount: number;
+  caseCount: number;
+  createdAt: string;
+}
+
+export interface OrganizationDetail extends Organization {
+  labs: OrganizationLab[];
+  admins: UserSummary[];
+}
+
+export interface OnboardingResult {
+  organization: Organization;
+  lab: OrganizationLab;
+  admin: UserSummary;
+  inviteUrl: string;
+  catalogueTests: number;
 }

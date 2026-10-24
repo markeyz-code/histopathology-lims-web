@@ -26,6 +26,7 @@ interface SeededUsers {
   admin: string;
   referrer: string;
   otherLabPathologist: string;
+  superadmin: string;
 }
 
 const PASSWORD = 'E2ePassword#2026';
@@ -182,6 +183,7 @@ describe('Accession to sign-out (e2e)', () => {
       admin: new Types.ObjectId(),
       referrer: new Types.ObjectId(),
       otherLabPathologist: new Types.ObjectId(),
+      superadmin: new Types.ObjectId(),
     };
 
     const userDocs = [
@@ -232,6 +234,13 @@ describe('Accession to sign-out (e2e)', () => {
         phone: '+234 803 555 0101',
       },
       {
+        _id: userIds.superadmin,
+        name: 'E2E Platform Admin',
+        email: `super-${unique}@e2e.test`,
+        role: 'SUPER_ADMIN',
+        labId,
+      },
+      {
         _id: userIds.otherLabPathologist,
         name: 'Other Pathologist',
         email: `other-${unique}@e2e.test`,
@@ -274,7 +283,8 @@ describe('Accession to sign-out (e2e)', () => {
       pathologist: userDocs[3]!.email,
       admin: userDocs[4]!.email,
       referrer: userDocs[5]!.email,
-      otherLabPathologist: userDocs[6]!.email,
+      otherLabPathologist: userDocs[7]!.email,
+      superadmin: userDocs[6]!.email,
     };
     tokens = {} as Record<keyof SeededUsers, string>;
     pathologistId = userIds.pathologist.toString();
@@ -1531,6 +1541,61 @@ describe('Accession to sign-out (e2e)', () => {
       .set(auth(tokens.pathologist))
       .expect(200);
     expect(messages.body.some((item: { id: string }) => item.id === ingested.body.id)).toBe(true);
+  });
+
+  it('onboards a hospital laboratory and accepts the administrator invitation', async () => {
+    const orgCode = `ORG-${unique}`;
+    const labCode = `NEW-${unique}`;
+    const adminEmail = `newadmin-${unique}@e2e.test`;
+    const onboarding = await request(http)
+      .post('/api/super-admin/onboard')
+      .set(auth(tokens.superadmin))
+      .send({
+        organization: {
+          code: orgCode,
+          name: 'E2E Hospital Group',
+          type: 'HOSPITAL',
+          country: 'Nigeria',
+          state: 'Lagos',
+          plan: 'TRIAL',
+          seats: 20,
+        },
+        lab: {
+          code: labCode,
+          name: 'E2E New Laboratory',
+          enabledDisciplines: ['CHEMICAL_PATHOLOGY'],
+          accessionPrefix: 'NCH',
+          currency: 'NGN',
+        },
+        administrator: { name: 'New Lab Administrator', email: adminEmail },
+      })
+      .expect(201);
+    expect(onboarding.body.organization.code).toBe(orgCode);
+    expect(onboarding.body.lab.code).toBe(labCode);
+    expect(onboarding.body.catalogueTests).toBeGreaterThan(0);
+    const token = new URL(onboarding.body.inviteUrl).searchParams.get('token');
+    expect(token).toBeTruthy();
+
+    const accepted = await request(http)
+      .post('/api/auth/accept-invite')
+      .send({ token, password: 'NewAdmin#2026' })
+      .expect(200);
+    expect(accepted.body.user.role).toBe('LAB_ADMIN');
+    expect(accepted.body.lab.code).toBe(labCode);
+    const newToken = accepted.body.accessToken as string;
+    const catalogue = await request(http).get('/api/catalog/tests').set(auth(newToken)).expect(200);
+    expect(catalogue.body.total).toBeGreaterThan(0);
+
+    const newLogin = await request(http)
+      .post('/api/auth/login')
+      .send({ labCode, email: adminEmail, password: 'NewAdmin#2026' })
+      .expect(200);
+    expect(newLogin.body.user.email).toBe(adminEmail);
+    const overview = await request(http)
+      .get('/api/super-admin/overview')
+      .set(auth(tokens.superadmin))
+      .expect(200);
+    expect(overview.body.organizations).toBeGreaterThanOrEqual(1);
   });
 
   it('keeps the worklist and dashboard tenant-scoped and TAT-aware', async () => {

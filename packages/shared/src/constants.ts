@@ -257,6 +257,7 @@ export const CAPABILITIES = [
   'qc',
   'microbiology',
   'quality',
+  'platform',
 ] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
@@ -838,3 +839,28 @@ export const INSTRUMENT_MESSAGE_STATUSES = [
   'ERROR',
 ] as const;
 export type InstrumentMessageStatus = (typeof INSTRUMENT_MESSAGE_STATUSES)[number];
+
+// B2B platform onboarding
+export const ORGANIZATION_TYPES = ['HOSPITAL', 'STANDALONE'] as const;
+export type OrganizationType = (typeof ORGANIZATION_TYPES)[number];
+
+export const ORGANIZATION_STATUSES = ['ONBOARDING', 'ACTIVE', 'SUSPENDED'] as const;
+export type OrganizationStatus = (typeof ORGANIZATION_STATUSES)[number];
+
+export const SUBSCRIPTION_PLANS = ['TRIAL', 'STANDARD', 'ENTERPRISE'] as const;
+export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];
+
+export const SUBSCRIPTION_PLAN_LABELS: Record<SubscriptionPlan, string> = {
+  TRIAL: 'Trial',
+  STANDARD: 'Standard',
+  ENTERPRISE: 'Enterprise',
+};
+
+export const ONBOARDING_STEPS = [
+  'organization',
+  'laboratory',
+  'administrator',
+  'catalogue',
+  'live',
+] as const;
+export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];

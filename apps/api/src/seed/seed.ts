@@ -724,7 +724,33 @@ export async function seedDatabase(): Promise<void> {
 
   const now = new Date();
   const year = now.getUTCFullYear();
+  const organization = await connection.collection('organizations').findOneAndUpdate(
+    { code: 'LAGOS-CENTRAL' },
+    {
+      $setOnInsert: {
+        code: 'LAGOS-CENTRAL',
+        name: 'Lagos Central Health Group',
+        type: 'HOSPITAL',
+        status: 'ACTIVE',
+        plan: 'ENTERPRISE',
+        seats: 50,
+        country: 'Nigeria',
+        state: 'Lagos',
+        city: 'Ikeja',
+        address: '12 Oba Akran Avenue, Ikeja',
+        phone: '+234 802 555 0198',
+        email: 'admin@lagoscentral.ng',
+        website: 'lagoscentralhisto.ng',
+        trialEndsAt: null,
+        notes: 'Demo hospital group with one laboratory.',
+        createdAt: now,
+        updatedAt: now,
+      },
+    },
+    { upsert: true, returnDocument: 'after' },
+  );
   const lab = await LabModel.create({
+    organizationId: organization?._id,
     code: LAB_CODE,
     name: 'Lagos Central Histopathology Laboratory',
     address: '12 Oba Akran Avenue, Ikeja, Lagos, Nigeria',

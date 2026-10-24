@@ -17,6 +17,9 @@ export interface UserEntity {
   disciplines: Discipline[];
   active: boolean;
   refreshTokenHash: string | null;
+  mustChangePassword: boolean;
+  invitationTokenHash: string | null;
+  invitationExpiresAt: Date | null;
   lastLoginAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -36,6 +39,9 @@ export const UserSchema = new Schema<UserEntity>(
     },
     active: { type: Boolean, default: true },
     refreshTokenHash: { type: String, default: null, select: false },
+    mustChangePassword: { type: Boolean, default: false },
+    invitationTokenHash: { type: String, default: null, select: false },
+    invitationExpiresAt: { type: Date, default: null },
     lastLoginAt: { type: Date, default: null },
   },
   baseSchemaOptions('users'),
