@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 
 // Local development reads the monorepo .env so both apps share one source of truth.
 try {
-  process.loadEnvFile(fileURLToPath(new URL('../../.env', import.meta.url)));
+  process.loadEnvFile(fileURLToPath(new URL('../.env', import.meta.url)));
 } catch {
   // No root .env (Docker and CI inject environment variables directly).
 }
@@ -21,6 +21,9 @@ if (process.env.VERCEL === '1' && !process.env.NUXT_PUBLIC_API_BASE) {
 }
 
 export default defineNuxtConfig({
+  alias: {
+    '@lims/shared': fileURLToPath(new URL('./shared/src/index.ts', import.meta.url)),
+  },
   components: [
     { path: '~/components', pathPrefix: false },
     { path: '~/disciplines/histopathology/components', pathPrefix: false },
@@ -128,7 +131,7 @@ export default defineNuxtConfig({
     resolve: {
       alias: {
         '@lims/shared': fileURLToPath(
-          new URL('../../packages/shared/src/index.ts', import.meta.url),
+          new URL('./shared/src/index.ts', import.meta.url),
         ),
       },
     },

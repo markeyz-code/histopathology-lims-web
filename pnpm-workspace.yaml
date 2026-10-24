@@ -1,7 +1,6 @@
 packages:
-  - frontends/*
-  - backend/*
-  - packages/*
+  - backend
+  - frontend
 
 minimumReleaseAgeExclude:
   - '@types/pdfkit@0.17.7'

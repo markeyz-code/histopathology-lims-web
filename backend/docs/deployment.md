@@ -14,31 +14,30 @@ There is **one frontend application**: `frontends/web` (Nuxt 3 / Vue 3). It cont
 
 Deploy this as **one Vercel project**. Do not split it into separate frontend repositories for deployment; the route groups share authentication, API client, layout and PWA runtime.
 
-Backend: one NestJS API (`backend/api`) on Railway. MongoDB and Redis are managed services.
+Backend: one NestJS API (`backend`) on Railway. MongoDB and Redis are managed services.
 
 ## Repository layout for deployment
 
 ```
 histopathology-lims (GitHub)
-├─ frontends/web     -> Vercel (or alias frontend/)
-├─ backend/api       -> Railway (Dockerfile)
-├─ backend/connector -> Serial/TCP analyzer agent
-├─ packages/shared   -> built during both deployments
+├─ frontend          -> Vercel
+├─ backend           -> Railway (Dockerfile)
+│   ├─ connector     -> Serial/TCP analyzer agent
+│   ├─ docker        -> Mongo replica-set initializer
+│   └─ docs          -> Architecture and guides
 ├─ vercel.json
-├─ railway.json
-└─ docs/deployment.md
+└─ railway.json
 ```
 
-Vercel project root: **repository root** (recommended, root `vercel.json` builds shared package and web app together) or set root directory to `frontends/web`.
+Vercel project root: **repository root** (recommended, zero-config via root `vercel.json`) or set root directory to `frontend`.
 
 ## Frontend — Vercel
 
-1. Vercel → **Add New Project** → import the `histopathology-lims` GitHub repository.
-2. Set **Root Directory** to the repository root (or `frontends/web`).
-3. Framework preset: **Other** (the repository supplies `vercel.json`).
-4. Build command/output are already defined:
-   - `pnpm --filter @lims/shared build && pnpm --filter @lims/web generate`
-   - output: `frontends/web/.output/public`
+1. Vercel → **Add New Project** → import the GitHub repository.
+2. Set **Root Directory** to the repository root (or `frontend`).
+3. Framework preset: **Nuxt.js** (or Other if using root `vercel.json`).
+4. Build command/output:
+   - output: `frontend/.output/public` (or `.output/public` if Root Directory is `frontend`)
 5. Add Production environment variables:
 
 | Variable                    | Example                                          |

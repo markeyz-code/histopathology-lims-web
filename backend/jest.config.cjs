@@ -1,9 +1,8 @@
 /** @type {import('jest').Config} */
 module.exports = {
-  rootDir: '..',
+  rootDir: '.',
   testEnvironment: 'node',
-  testRegex: 'test/.*\\.e2e-spec\\.ts$',
-  testTimeout: 180_000,
+  testRegex: 'src/.*\\.spec\\.ts$',
   moduleFileExtensions: ['ts', 'js', 'json'],
   transform: {
     '^.+\\.ts$': [
@@ -15,7 +14,14 @@ module.exports = {
     ],
   },
   moduleNameMapper: {
-    '^@lims/shared$': '<rootDir>/../../packages/shared/src/index.ts',
+    '^@lims/shared$': '<rootDir>/shared/src/index.ts',
   },
-  clearMocks: false,
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/main.ts',
+    '!src/**/*.module.ts',
+    '!src/**/*.schema.ts',
+    '!src/seed/**',
+  ],
+  clearMocks: true,
 };

@@ -23,7 +23,7 @@ services:
       mongo:
         condition: service_healthy
     volumes:
-      - ./docker/mongo-init.js:/scripts/mongo-init.js:ro
+      - ./backend/docker/mongo-init.js:/scripts/mongo-init.js:ro
     entrypoint: ['mongosh', '--host', 'mongo:27017', '--quiet', '/scripts/mongo-init.js']
 
   redis:
@@ -43,7 +43,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: backend/api/Dockerfile
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     depends_on:
       mongo-init:
@@ -100,7 +100,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: frontends/web/Dockerfile
+      dockerfile: frontend/Dockerfile
     restart: unless-stopped
     depends_on:
       api:
@@ -128,7 +128,7 @@ services:
     profiles: ['tools']
     build:
       context: .
-      dockerfile: backend/api/Dockerfile
+      dockerfile: backend/Dockerfile
     depends_on:
       mongo-init:
         condition: service_completed_successfully

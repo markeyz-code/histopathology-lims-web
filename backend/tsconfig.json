@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "baseUrl": ".",
@@ -8,8 +8,11 @@
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "types": ["node", "jest"],
     "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedParameters": false,
+    "paths": {
+      "@lims/shared": ["./shared/src/index.ts"]
+    }
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "include": ["src/**/*.ts", "test/**/*.ts", "shared/src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

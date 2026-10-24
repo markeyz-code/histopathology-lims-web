@@ -2,8 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "corepack enable && corepack prepare pnpm@12.11.2 --activate && pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter @lims/shared build && pnpm --filter @lims/web generate",
-  "outputDirectory": "frontends/web/.output/public",
+  "buildCommand": "cd frontend && pnpm generate",
+  "outputDirectory": "frontend/.output/public",
   "routes": [
     {
       "handle": "filesystem"
