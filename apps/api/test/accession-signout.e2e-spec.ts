@@ -129,7 +129,7 @@ describe('Accession to sign-out (e2e)', () => {
         phone: '+234 800 000 0000',
         email: 'lab@e2e.test',
         accessionPrefix: 'TST',
-        enabledDisciplines: ['HISTOPATHOLOGY', 'HAEMATOLOGY'],
+        enabledDisciplines: ['HISTOPATHOLOGY', 'HAEMATOLOGY', 'CHEMICAL_PATHOLOGY', 'MICROBIOLOGY'],
         accessionPrefixes: {},
         accessionFormat: '{PREFIX}-{YYYY}-{SEQ:6}',
         accessionCounters: {},
@@ -206,7 +206,7 @@ describe('Accession to sign-out (e2e)', () => {
         email: `tech-${unique}@e2e.test`,
         role: 'TECHNOLOGIST',
         labId,
-        disciplines: ['HISTOPATHOLOGY'],
+        disciplines: ['HISTOPATHOLOGY', 'HAEMATOLOGY', 'CHEMICAL_PATHOLOGY'],
       },
       {
         _id: userIds.pathologist,
@@ -214,7 +214,7 @@ describe('Accession to sign-out (e2e)', () => {
         email: `path-${unique}@e2e.test`,
         role: 'PATHOLOGIST',
         labId,
-        disciplines: ['HISTOPATHOLOGY'],
+        disciplines: ['HISTOPATHOLOGY', 'HAEMATOLOGY', 'CHEMICAL_PATHOLOGY'],
       },
       {
         _id: userIds.admin,
@@ -334,7 +334,11 @@ describe('Accession to sign-out (e2e)', () => {
       expect(tokens[key as keyof SeededUsers]).toMatch(/.+/);
     }
     const me = await request(http).get('/api/auth/me').set(auth(tokens.pathologist)).expect(200);
-    expect(me.body.user.disciplines).toEqual(['HISTOPATHOLOGY']);
+    expect(me.body.user.disciplines).toEqual([
+      'HISTOPATHOLOGY',
+      'HAEMATOLOGY',
+      'CHEMICAL_PATHOLOGY',
+    ]);
     expect(me.body.lab.enabledDisciplines).toContain('HISTOPATHOLOGY');
   });
 
@@ -958,13 +962,297 @@ describe('Accession to sign-out (e2e)', () => {
     expect(replay.body.results[0].duplicate).toBe(true);
   });
 
+  it('runs a multi-discipline result from catalogue through rules, critical acknowledgement, QC and cumulative history', async () => {
+    const fbc = await request(http)
+      .post('/api/catalog/tests')
+      .set(auth(tokens.admin))
+      .send({
+        discipline: 'HAEMATOLOGY',
+        code: 'FBC',
+        name: 'Full blood count',
+        specimenType: 'EDTA blood',
+        analytes: [
+          {
+            key: 'hb',
+            name: 'Haemoglobin',
+            unit: 'g/dL',
+            resultType: 'NUMERIC',
+            required: true,
+            criticalLow: 7,
+            criticalHigh: 20,
+            referenceRanges: [
+              { low: 13, high: 17, sex: 'MALE' },
+              { low: 12, high: 15, sex: 'FEMALE' },
+            ],
+          },
+          {
+            key: 'wbc',
+            name: 'White cell count',
+            unit: '×10⁹/L',
+            resultType: 'NUMERIC',
+            required: true,
+            referenceRanges: [{ low: 4, high: 11 }],
+          },
+          {
+            key: 'plt',
+            name: 'Platelets',
+            unit: '×10⁹/L',
+            resultType: 'NUMERIC',
+            required: true,
+            criticalLow: 50,
+            referenceRanges: [{ low: 150, high: 450 }],
+          },
+        ],
+      })
+      .expect(201);
+    expect(fbc.body.code).toBe('FBC');
+
+    await request(http)
+      .post('/api/catalog/tests')
+      .set(auth(tokens.admin))
+      .send({
+        discipline: 'CHEMICAL_PATHOLOGY',
+        code: 'EUC',
+        name: 'Electrolytes, urea and creatinine',
+        specimenType: 'Serum',
+        analytes: [
+          {
+            key: 'sodium',
+            name: 'Sodium',
+            unit: 'mmol/L',
+            resultType: 'NUMERIC',
+            required: true,
+            referenceRanges: [{ low: 135, high: 145 }],
+          },
+          {
+            key: 'potassium',
+            name: 'Potassium',
+            unit: 'mmol/L',
+            resultType: 'NUMERIC',
+            required: true,
+            criticalLow: 2.5,
+            criticalHigh: 6.5,
+            referenceRanges: [{ low: 3.5, high: 5.1 }],
+          },
+          {
+            key: 'creatinine',
+            name: 'Creatinine',
+            unit: 'µmol/L',
+            resultType: 'NUMERIC',
+            required: true,
+            referenceRanges: [{ low: 44, high: 106 }],
+          },
+        ],
+      })
+      .expect(201);
+
+    await request(http)
+      .post('/api/rules')
+      .set(auth(tokens.admin))
+      .send({
+        code: 'REFLEX_RETIC',
+        name: 'Reflex reticulocyte count',
+        discipline: 'HAEMATOLOGY',
+        testCodes: ['FBC'],
+        trigger: 'RESULT_SAVE',
+        conditions: { field: 'values.hb.flag', op: 'in', value: ['LOW', 'CRITICAL_LOW'] },
+        actions: [
+          {
+            type: 'REFLEX_TEST',
+            testCode: 'RETIC',
+            message: 'Low haemoglobin — reticulocyte count added.',
+          },
+        ],
+      })
+      .expect(201);
+
+    await request(http)
+      .post('/api/rules')
+      .set(auth(tokens.admin))
+      .send({
+        code: 'CRITICAL_K',
+        name: 'Critical potassium',
+        discipline: 'CHEMICAL_PATHOLOGY',
+        testCodes: ['EUC'],
+        trigger: 'RESULT_SAVE',
+        conditions: { field: 'values.potassium.critical', op: 'eq', value: true },
+        actions: [
+          { type: 'CRITICAL_ALERT', severity: 'CRITICAL', message: 'Telephone the clinician.' },
+        ],
+      })
+      .expect(201);
+
+    const haemAccession = await request(http)
+      .post('/api/cases/accession')
+      .set(auth(tokens.receptionist))
+      .send({
+        patient: {
+          firstName: 'Chidi',
+          lastName: 'Result',
+          sex: 'MALE',
+          age: 46,
+          mrn: `P2-H-${unique}`,
+        },
+        referringClinician: { name: 'Dr Phase Two' },
+        clinicalHistory: 'Routine full blood count for Phase 2.',
+        priority: 'ROUTINE',
+        discipline: 'HAEMATOLOGY',
+        specimens: [{ specimenType: 'EDTA blood', site: 'Antecubital fossa' }],
+      })
+      .expect(201);
+    const haemCaseId = haemAccession.body.id as string;
+    const fbcRequestId = haemAccession.body.testRequests[0].id as string;
+
+    const fbcDraft = await request(http)
+      .post('/api/results')
+      .set(auth(tokens.technologist))
+      .send({ testRequestId: fbcRequestId })
+      .expect(201);
+    expect(fbcDraft.body.status).toBe('DRAFT');
+
+    const fbcResult = await request(http)
+      .patch(`/api/results/${fbcDraft.body.id}`)
+      .set(auth(tokens.technologist))
+      .send({
+        values: [
+          { analyteKey: 'hb', value: 9.2 },
+          { analyteKey: 'wbc', value: 6.4 },
+          { analyteKey: 'plt', value: 210 },
+        ],
+      })
+      .expect(200);
+    expect(fbcResult.body.status).toBe('RESULTED');
+    expect(
+      fbcResult.body.values.find((value: { analyteKey: string }) => value.analyteKey === 'hb').flag,
+    ).toBe('LOW');
+    const requestsAfterReflex = await request(http)
+      .get(`/api/test-requests?caseId=${haemCaseId}`)
+      .set(auth(tokens.admin))
+      .expect(200);
+    expect(
+      requestsAfterReflex.body.items.some((item: { code: string }) => item.code === 'RETIC'),
+    ).toBe(true);
+    const executions = await request(http)
+      .get(`/api/results/${fbcResult.body.id}/executions`)
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(
+      executions.body.some((item: { ruleCode: string }) => item.ruleCode === 'REFLEX_RETIC'),
+    ).toBe(true);
+
+    await request(http)
+      .post(`/api/results/${fbcResult.body.id}/verify`)
+      .set(auth(tokens.pathologist))
+      .expect(201);
+    await request(http)
+      .post(`/api/results/${fbcResult.body.id}/release`)
+      .set(auth(tokens.pathologist))
+      .expect(201);
+
+    const chemAccession = await request(http)
+      .post('/api/cases/accession')
+      .set(auth(tokens.receptionist))
+      .send({
+        patient: {
+          firstName: 'Halima',
+          lastName: 'Critical',
+          sex: 'FEMALE',
+          age: 58,
+          mrn: `P2-C-${unique}`,
+        },
+        referringClinician: { name: 'Dr Phase Two' },
+        clinicalHistory: 'Critical potassium check.',
+        priority: 'URGENT',
+        discipline: 'CHEMICAL_PATHOLOGY',
+        testCode: 'EUC',
+        testName: 'Electrolytes, urea and creatinine',
+        specimens: [{ specimenType: 'Serum', site: 'Antecubital fossa' }],
+      })
+      .expect(201);
+    const chemCaseId = chemAccession.body.id as string;
+    const chemDraft = await request(http)
+      .post('/api/results')
+      .set(auth(tokens.technologist))
+      .send({ testRequestId: chemAccession.body.testRequests[0].id })
+      .expect(201);
+    const chemResult = await request(http)
+      .patch(`/api/results/${chemDraft.body.id}`)
+      .set(auth(tokens.technologist))
+      .send({
+        values: [
+          { analyteKey: 'sodium', value: 140 },
+          { analyteKey: 'potassium', value: 7.2 },
+          { analyteKey: 'creatinine', value: 80 },
+        ],
+      })
+      .expect(200);
+    expect(chemResult.body.critical).toBe(true);
+    await request(http)
+      .post(`/api/results/${chemResult.body.id}/verify`)
+      .set(auth(tokens.pathologist))
+      .expect(409);
+    await request(http)
+      .post(`/api/results/${chemResult.body.id}/acknowledge-critical`)
+      .set(auth(tokens.pathologist))
+      .send({ note: 'Called the requesting clinician at 14:20.' })
+      .expect(201);
+    await request(http)
+      .post(`/api/results/${chemResult.body.id}/verify`)
+      .set(auth(tokens.pathologist))
+      .expect(201);
+    await request(http)
+      .post(`/api/results/${chemResult.body.id}/release`)
+      .set(auth(tokens.pathologist))
+      .expect(201);
+
+    const material = await request(http)
+      .post('/api/qc/materials')
+      .set(auth(tokens.admin))
+      .send({
+        discipline: 'CHEMICAL_PATHOLOGY',
+        name: 'Chemistry normal control',
+        lotNumber: `QC-${unique}`,
+        level: 'NORMAL',
+        testCode: 'EUC',
+        analyteKey: 'sodium',
+        targetMean: 140,
+        targetSd: 2,
+        unit: 'mmol/L',
+      })
+      .expect(201);
+    const acceptedRun = await request(http)
+      .post('/api/qc/runs')
+      .set(auth(tokens.technologist))
+      .send({ materialId: material.body.id, values: [140, 141, 139] })
+      .expect(201);
+    expect(acceptedRun.body.status).toBe('ACCEPTED');
+    const rejectedRun = await request(http)
+      .post('/api/qc/runs')
+      .set(auth(tokens.technologist))
+      .send({ materialId: material.body.id, values: [147, 148] })
+      .expect(201);
+    expect(rejectedRun.body.status).toBe('REJECTED');
+
+    const cumulative = await request(http)
+      .get(`/api/results/cumulative/${chemAccession.body.patient.id}`)
+      .set(auth(tokens.pathologist))
+      .expect(200);
+    expect(cumulative.body.results[0].testCode).toBe('EUC');
+    expect(cumulative.body.results[0].latest.status).toBe('RELEASED');
+    expect(chemCaseId).toBeTruthy();
+  });
+
   it('keeps the worklist and dashboard tenant-scoped and TAT-aware', async () => {
     const worklist = await request(http)
       .get('/api/worklist')
       .set(auth(tokens.pathologist))
       .expect(200);
-    expect(worklist.body.items.length).toBeLessThanOrEqual(2);
-    expect(worklist.body.items[0]?.testRequests?.[0]?.discipline).toBe('HISTOPATHOLOGY');
+    expect(worklist.body.items.length).toBeLessThanOrEqual(5);
+    expect(
+      worklist.body.items.some((item: { testRequests: Array<{ discipline: string }> }) =>
+        item.testRequests.some((request) => request.discipline === 'HISTOPATHOLOGY'),
+      ),
+    ).toBe(true);
 
     const configs = await request(http)
       .get('/api/worklist/configs')
