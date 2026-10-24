@@ -874,14 +874,16 @@ const demoError = ref<string | null>(null);
 const demoForm = reactive({
   hospitalName: '',
   contactName: '',
-  clinicalRole: 'Chief Medical Laboratory Scientist',
+  clinicalRole: 'Chief Medical Laboratory Scientist (CMLS)',
   email: '',
   phone: '',
-  monthlyVolume: '300 - 800 tests',
+  monthlyVolume: '300 - 1,000 tests / month',
   disciplines: ['Histopathology', 'Clinical Chemistry', 'Haematology'],
   notes: '',
 });
 
+const roleOther = ref('');
+const volumeOther = ref('');
 const roleOptions = [
   'Chief Medical Laboratory Scientist (CMLS)',
   'Consultant Pathologist / Histopathologist',
@@ -890,12 +892,14 @@ const roleOptions = [
   'Head of Hospital IT / Informatics',
   'Private Diagnostic Center Director',
 ].map((value) => ({ value, label: value }));
+roleOptions.push({ value: 'Other', label: 'Other — enter your role' });
 const volumeOptions = [
   '< 300 tests / month',
   '300 - 1,000 tests / month',
   '1,000 - 5,000 tests / month',
   '5,000+ tests / month (Tertiary Centre)',
 ].map((value) => ({ value, label: value }));
+volumeOptions.push({ value: 'Other', label: 'Other — enter a custom volume' });
 
 function openDemo(type: 'DEMO' | 'TRIAL' = 'DEMO', discipline?: string): void {
   demoLeadType.value = type;
@@ -926,9 +930,15 @@ async function submitDemoRequest(): Promise<void> {
       contactName: demoForm.contactName || demoForm.email,
       email: demoForm.email,
       phone: demoForm.phone || null,
-      role: demoForm.clinicalRole,
+      role:
+        demoForm.clinicalRole === 'Other'
+          ? roleOther.value.trim() || 'Other'
+          : demoForm.clinicalRole,
       departments: demoForm.disciplines,
-      monthlyVolume: demoForm.monthlyVolume,
+      monthlyVolume:
+        demoForm.monthlyVolume === 'Other'
+          ? volumeOther.value.trim() || 'Other'
+          : demoForm.monthlyVolume,
       message: demoForm.notes || null,
     });
     isDemoSubmitted.value = true;
@@ -1006,6 +1016,8 @@ const departmentDemoAccounts = [
 
 function resetDemoModal() {
   isDemoModalOpen.value = false;
+  roleOther.value = '';
+  volumeOther.value = '';
   setTimeout(() => {
     isDemoSubmitted.value = false;
   }, 400);
@@ -3030,6 +3042,14 @@ const faqs = [
               :options="roleOptions"
               placeholder="Select your role"
             />
+            <input
+              v-if="demoForm.clinicalRole === 'Other'"
+              v-model="roleOther"
+              type="text"
+              maxlength="120"
+              placeholder="e.g. Head of Laboratory Services"
+              class="mt-2 w-full border border-accent/50 bg-canvas p-2.5 text-sm text-ink focus:border-accent focus:outline-none"
+            />
           </div>
           <div>
             <label class="block font-mono text-2xs uppercase tracking-caps text-muted mb-1"
@@ -3065,6 +3085,14 @@ const faqs = [
               v-model="demoForm.monthlyVolume"
               :options="volumeOptions"
               placeholder="Select monthly volume"
+            />
+            <input
+              v-if="demoForm.monthlyVolume === 'Other'"
+              v-model="volumeOther"
+              type="text"
+              maxlength="80"
+              placeholder="e.g. 12,000 tests / month across 4 labs"
+              class="mt-2 w-full border border-accent/50 bg-canvas p-2.5 text-sm text-ink focus:border-accent focus:outline-none"
             />
           </div>
         </div>
