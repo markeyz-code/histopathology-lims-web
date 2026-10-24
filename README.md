@@ -1,6 +1,6 @@
 # Multi-discipline Laboratory LIMS
 
-**Phase 6 — interoperability, instruments and offline resilience.** A shared-core laboratory information management system for general medical laboratories, designed Nigeria-first for low-resource, low-bandwidth settings. Histopathology is the most complete module. Phase 2 added tenant-configurable test catalogues, versioned haematology and chemistry results, a safe rules engine, Westgard QC and cross-discipline cumulative reports. Phase 3 added multi-discipline PDFs, delivery, portal result access and the collection-centre/rider chain. Phase 4 added microbiology culture/AST. Phase 5 added quality management and send-outs. Phase 6 completes the interoperability surface with an ASTM/HL7 instrument connector and revalidated offline, FHIR, WSI and terminology adapters.
+**Phase 6 — interoperability, instruments and B2B onboarding.** A shared-core laboratory information management system for general medical laboratories, designed Nigeria-first for low-resource, low-bandwidth settings. Histopathology is the most complete module. Phase 2 added tenant-configurable test catalogues, versioned haematology and chemistry results, a safe rules engine, Westgard QC and cross-discipline cumulative reports. Phase 3 added multi-discipline PDFs, delivery, portal result access and the collection-centre/rider chain. Phase 4 added microbiology culture/AST. Phase 5 added quality management and send-outs. Phase 6 completes the interoperability surface with an ASTM/HL7 instrument connector and revalidated offline, FHIR, WSI and terminology adapters. A B2B platform layer onboards hospital groups and standalone laboratories, provisions each laboratory as an isolated tenant, and gives every laboratory a configuration console.
 
 Every laboratory enables only the disciplines it operates. Patient, case, specimen, custody, audit, worklist and report scaffolding are shared. Discipline modules contribute their own units, state machines, worklist configuration, result schemas, rules and report templates through a `DisciplineRegistry`.
 
@@ -27,6 +27,17 @@ Histopathology keeps the block-and-slide custody model: a specimen becomes casse
 | ![Microbiology](docs/screens/microbiology.jpg)           | ![Quality control](docs/screens/qc.jpg)                            |
 
 ---
+
+## B2B platform onboarding
+
+- `/super-admin` for hospital groups and standalone-laboratory onboarding.
+- Organization → laboratories → first administrator wizard.
+- One-time administrator invitations with password setup at `/portal/accept-invite`.
+- Starter catalogue, disciplines and letterhead provisioned automatically.
+- Every laboratory gets `/admin` with configuration checklist, staff, catalogue, rules, protocols, settings and integrations.
+- Suspend/restore laboratories, manage organizations, plans and seats.
+
+Details: [docs/b2b-onboarding.md](docs/b2b-onboarding.md).
 
 ## Phase 6 — interoperability and instruments
 
@@ -173,7 +184,7 @@ docker/       Mongo replica-set initialiser
 docs/         Architecture notes and screenshots
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the shared core, [docs/phase-2.md](docs/phase-2.md) for Phase 2, [docs/phase-3.md](docs/phase-3.md) for Phase 3, [docs/phase-4.md](docs/phase-4.md) for Phase 4, [docs/phase-5.md](docs/phase-5.md) for Phase 5, [docs/phase-6.md](docs/phase-6.md) for Phase 6, [docs/phase-1.5-migration.md](docs/phase-1.5-migration.md) for the discipline refactor and [docs/phase-2-3.md](docs/phase-2-3.md) for the already-built extension modules (legacy numbering).
+See [docs/b2b-onboarding.md](docs/b2b-onboarding.md) for platform onboarding, [docs/architecture.md](docs/architecture.md) for the shared core, [docs/phase-2.md](docs/phase-2.md) for Phase 2, [docs/phase-3.md](docs/phase-3.md) for Phase 3, [docs/phase-4.md](docs/phase-4.md) for Phase 4, [docs/phase-5.md](docs/phase-5.md) for Phase 5, [docs/phase-6.md](docs/phase-6.md) for Phase 6, [docs/phase-1.5-migration.md](docs/phase-1.5-migration.md) for the discipline refactor and [docs/phase-2-3.md](docs/phase-2-3.md) for the already-built extension modules (legacy numbering).
 
 ### Domain hierarchy
 
@@ -348,6 +359,11 @@ GET    /api/users[/pathologists]                   GET  /api/labs/me
 GET    /api/audit                                  POST /api/maintenance/tat-check
 GET    /api/health  (public)                       Swagger at /docs
 
+B2B additions:
+POST /api/super-admin/onboard                      GET /api/super-admin/overview
+GET/POST /api/super-admin/organizations             POST /api/super-admin/organizations/:id/labs
+POST /api/super-admin/labs/:id/invite-admin         POST /api/auth/accept-invite
+
 Phase 6 additions:
 POST /api/instruments/messages                    GET /api/instruments/messages
 agent: node apps/connector/index.mjs --protocol ASTM --file result.astm
@@ -407,7 +423,7 @@ pnpm test:e2e
 pnpm verify
 ```
 
-The E2E suite (22 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
+The E2E suite (23 tests) starts an ephemeral MongoDB **replica set** with `mongodb-memory-server`, seeds a second tenant, and proves:
 
 - accessioning generates a formatted accession number and unique specimen barcode
 - role checks and invalid scan transitions reject correctly
@@ -435,6 +451,7 @@ The E2E suite (22 tests) starts an ephemeral MongoDB **replica set** with `mongo
 - a microbiology culture completes identification, MIC AST, antibiogram and WHONET export
 - equipment temperature, non-conformance/CAPA and a send-out lifecycle are recorded
 - an ASTM instrument message is parsed and matched to an accession
+- a hospital laboratory is onboarded, its administrator accepts the invitation and signs into the new tenant
 
 ## Design direction
 
