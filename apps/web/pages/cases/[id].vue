@@ -396,6 +396,9 @@ onMounted(async () => {
           <button v-if="detail.report" type="button" class="btn btn-secondary" @click="openPdf">
             <AppIcon name="file" :size="13" /> PDF
           </button>
+          <NuxtLink :to="`/patients/${detail.patient.id}/cumulative`" class="btn btn-secondary">
+            <AppIcon name="file" :size="13" /> Cumulative
+          </NuxtLink>
           <NuxtLink v-if="canOpenReport" :to="`/reports/${detail.id}`" class="btn btn-primary">
             <AppIcon name="edit" :size="13" />
             {{ detail.report ? 'Open report' : 'Start report' }}

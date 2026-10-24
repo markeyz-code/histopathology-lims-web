@@ -45,6 +45,8 @@ const sections: NavSection[] = [
         capability: 'worklist',
         discipline: 'HISTOPATHOLOGY',
       },
+      { to: '/results', label: 'Results', icon: 'beaker', capability: 'results' },
+      { to: '/qc', label: 'Quality control', icon: 'shield', capability: 'qc' },
       { to: '/qa', label: 'QA review', icon: 'shield', capability: 'qa' },
       { to: '/admin/billing', label: 'Billing', icon: 'billing', capability: 'billing' },
     ],
@@ -64,6 +66,8 @@ const sections: NavSection[] = [
         capability: 'admin',
         discipline: 'HISTOPATHOLOGY',
       },
+      { to: '/admin/catalog', label: 'Test catalogue', icon: 'protocols', capability: 'admin' },
+      { to: '/admin/rules', label: 'Rules', icon: 'shield', capability: 'admin' },
       { to: '/admin/inventory', label: 'Inventory', icon: 'beaker', capability: 'inventory' },
       { to: '/admin/notifications', label: 'Message outbox', icon: 'send', capability: 'admin' },
       { to: '/admin/integrations', label: 'Integrations', icon: 'external', capability: 'interop' },
@@ -274,7 +278,7 @@ onBeforeUnmount(() => {
       <footer
         class="mx-auto flex w-full max-w-shell flex-col gap-1 border-t border-line px-4 py-4 font-mono text-[9px] uppercase tracking-[0.14em] text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
       >
-        <span>Laboratory LIMS · Phase 1.5</span>
+        <span>Laboratory LIMS · Phase 2</span>
         <span>{{ auth.lab?.name }} · {{ auth.lab?.code }}</span>
       </footer>
     </div>

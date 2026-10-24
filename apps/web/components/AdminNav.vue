@@ -1,16 +1,19 @@
 <script setup lang="ts">
 const route = useRoute();
 import type { Capability } from '@lims/shared';
+import type { IconName } from '~/types/icons';
 
 const auth = useAuthStore();
 const tabs: Array<{
   to: string;
   label: string;
-  icon: 'users' | 'protocols' | 'settings' | 'audit' | 'beaker' | 'billing' | 'send' | 'external';
+  icon: IconName;
   capability: Capability;
 }> = [
   { to: '/admin/users', label: 'Users', icon: 'users', capability: 'admin' },
   { to: '/admin/protocols', label: 'Protocols', icon: 'protocols', capability: 'admin' },
+  { to: '/admin/catalog', label: 'Test catalogue', icon: 'beaker', capability: 'admin' },
+  { to: '/admin/rules', label: 'Rules', icon: 'shield', capability: 'admin' },
   { to: '/admin/settings', label: 'Lab settings', icon: 'settings', capability: 'admin' },
   { to: '/admin/inventory', label: 'Inventory', icon: 'beaker', capability: 'inventory' },
   { to: '/admin/billing', label: 'Billing', icon: 'billing', capability: 'billing' },
