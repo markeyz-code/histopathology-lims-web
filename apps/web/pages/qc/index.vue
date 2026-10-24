@@ -287,7 +287,7 @@ watch(
             <div class="overflow-x-auto border border-line bg-canvas p-2">
               <svg
                 viewBox="0 0 680 220"
-                class="h-[220px] w-full min-w-[560px]"
+                class="h-[220px] w-full min-w-0 sm:min-w-[560px]"
                 role="img"
                 aria-label="Levey-Jennings chart"
               >

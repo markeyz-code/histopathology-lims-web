@@ -39,7 +39,7 @@ onMounted(async () => {
           public; patient data is lab-scoped.
         </p>
         <div class="mt-4 border border-line bg-canvas p-3 font-mono text-[10px] text-muted">
-          <p>{{ apiBase }}/fhir/r4</p>
+          <p class="break-all">{{ apiBase }}/fhir/r4</p>
           <p class="mt-1">
             {{
               resources.length
@@ -75,11 +75,11 @@ onMounted(async () => {
           </div>
           <div class="border border-line bg-canvas p-3">
             <p class="label-caps">HTTP test endpoint</p>
-            <p class="mono mt-1 text-xs">POST {{ apiBase }}/interop/hl7/messages</p>
+            <p class="mono mt-1 break-all text-xs">POST {{ apiBase }}/interop/hl7/messages</p>
           </div>
           <div class="border border-line bg-canvas p-3">
             <p class="label-caps">ORU renderer</p>
-            <p class="mono mt-1 text-xs">GET {{ apiBase }}/interop/hl7/oru/:caseId</p>
+            <p class="mono mt-1 break-all text-xs">GET {{ apiBase }}/interop/hl7/oru/:caseId</p>
           </div>
         </div>
       </section>
@@ -110,8 +110,10 @@ onMounted(async () => {
           morphology/topography extensions.
         </p>
         <div class="mt-4 border border-line bg-canvas p-3 font-mono text-[10px] text-muted">
-          <p>GET {{ apiBase }}/terminology/search?system=SNOMED_CT&amp;q=breast</p>
-          <p class="mt-1">POST {{ apiBase }}/terminology/import</p>
+          <p class="break-all">
+            GET {{ apiBase }}/terminology/search?system=SNOMED_CT&amp;q=breast
+          </p>
+          <p class="mt-1 break-all">POST {{ apiBase }}/terminology/import</p>
         </div>
         <p class="mt-3 text-xs text-muted">
           Import a licensed subset; do not redistribute proprietary code systems.
